@@ -1,0 +1,22 @@
+{
+  "public_key": "13LWbTkeuu4Pz7nFd6jCEEAwLfYZsDJSnK",
+  "bandwidth": {
+    "total": {
+      "incoming": 0,
+      "outgoing": 0
+    },
+    "current": {
+      "incoming": 0,
+      "outgoing": 0
+    },
+    "limits": {
+      "incoming": null,
+      "outgoing": null
+    }
+  },
+  "storage": {
+    "capacity": 524288000,
+    "used": 0,
+    "max_file_size": 0
+  }
+}
