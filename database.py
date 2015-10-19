@@ -15,7 +15,7 @@ metadata = MetaData(bind=engine)
 files = Table(
     'files', metadata,
     Column('id', Integer, primary_key=True),
-    Column('hash', String(64), nullable=False),
+    Column('hash', String(64), nullable=False, unique=True),
     Column('role', String(3), nullable=False),
     Column('size', Integer, nullable=False),
 )

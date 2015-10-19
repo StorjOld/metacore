@@ -1,6 +1,6 @@
-import json
+import os
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 
 from database import files
 
@@ -8,15 +8,33 @@ app = Flask(__name__)
 app.config.from_object('config')
 
 
-@app.route('/api/files/', methods=['GET'])
-def files_info():
-    hash_list = tuple(_['hash'] for _ in files.select().execute())
-    return json.dumps(hash_list), 200, {'Content-Type': 'application/json'}
+@app.route('/api/files/', methods=['POST'])
+def upload_file():
+    """
+    Upload file to the Node.
+    """
+    file_data = request.files['file_data'].stream.read()
 
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-@app.route('/api/nodes/me/', methods=['GET'])
-def status_info():
-    return jsonify(app.config['NODE'].info)
+    with open(
+            os.path.join(app.config['UPLOAD_FOLDER'],
+                         request.form['data_hash']),
+            'wb'
+    ) as file_to_save:
+        file_to_save.write(file_data)
+
+    files.insert().values(
+        hash=request.form['data_hash'],
+        role=request.form['file_role'],
+        size=len(file_data)
+    ).execute()
+
+    response = jsonify(data_hash=request.form['data_hash'],
+                       file_role=request.form['file_role'])
+    response.status_code = 201
+
+    return response
 
 
 if __name__ == '__main__':
