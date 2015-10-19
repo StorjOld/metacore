@@ -66,6 +66,15 @@ class Node(object):
         return info
 
     @property
+    def capacity(self):
+        """
+        Get current capacity.
+        :return: current Node capacity in bytes
+        :rtype: int
+        """
+        return self.__capacity
+
+    @property
     def current(self):
         """
         Get current bandwidth.

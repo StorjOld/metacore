@@ -29,9 +29,15 @@ def upload_file():
         return response
 
     file_data = request.files['file_data'].stream.read()
+    file_size = len(file_data)
 
-    if len(file_data) > app.config['MAX_FILE_SIZE']:
+    if file_size > app.config['MAX_FILE_SIZE']:
         response = jsonify(error_code=ERR_HUGE_FILE)
+        response.status_code = 400
+        return response
+
+    if file_size > app.config['NODE'].capacity:
+        response = jsonify(error_code=ERR_FULL_DISK)
         response.status_code = 400
         return response
 

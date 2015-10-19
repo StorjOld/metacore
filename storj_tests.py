@@ -4,7 +4,7 @@ import os.path
 import unittest
 from hashlib import sha256
 from io import BytesIO
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 import storj
 from database import files
@@ -203,6 +203,43 @@ class UploadFileCase(unittest.TestCase):
 
         self.assertDictEqual(
             {'error_code': ERR_HUGE_FILE},
+            json.loads(response.data.decode()),
+            "Unexpected response data."
+        )
+
+        self.assertSetEqual(
+            self.files,
+            set(tuple(_) for _ in files.select().execute()),
+            "Database has to be unchanged."
+        )
+
+        self.assertFalse(os.path.exists(self.file_saving_path),
+                         "File should not be saved.")
+
+    def test_full_disk(self):
+        """
+        Try to upload file with no enough space on disk.
+        """
+        mock_config = copy.deepcopy(self.app.config)
+        mock_config['NODE'] = Mock(capacity=1)
+
+        with patch('storj.app.config', mock_config):
+
+            send_data = {
+                'data_hash': self.valid_hash,
+                'file_data': (BytesIO(self.file_data), 'test_file'),
+                'file_role': '000'
+            }
+
+            response = self.make_request(send_data)
+
+        self.assertEqual(400, response.status_code,
+                         "Response has to be marked as 'Bad Request'.")
+        self.assertEqual('application/json', response.content_type,
+                         "Has to be a JSON-response.")
+
+        self.assertDictEqual(
+            {'error_code': ERR_FULL_DISK},
             json.loads(response.data.decode()),
             "Unexpected response data."
         )
