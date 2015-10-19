@@ -2,3 +2,4 @@ __author__ = 'karatel'
 
 
 ERR_INVALID_HASH = 101
+ERR_MISMATCHED_HASH = 102

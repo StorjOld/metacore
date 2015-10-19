@@ -70,7 +70,7 @@ class UploadFileCase(unittest.TestCase):
         Upload file with all valid data.
         """
         send_data = {
-            'data_hash': sha256(self.file_data).hexdigest(),
+            'data_hash': self.valid_hash,
             'file_data': (BytesIO(self.file_data), 'test_file'),
             'file_role': '000'
         }
@@ -131,6 +131,38 @@ class UploadFileCase(unittest.TestCase):
 
         self.assertDictEqual(
             {'error_code': ERR_INVALID_HASH},
+            json.loads(response.data.decode()),
+            "Unexpected response data."
+        )
+
+        self.assertSetEqual(
+            self.files,
+            set(tuple(_) for _ in files.select().execute()),
+            "Database has to be unchanged."
+        )
+
+        self.assertFalse(os.path.exists(self.file_saving_path),
+                         "File should not be saved.")
+
+    def test_mismatched_hash(self):
+        """
+        Try to upload file with mismatched SHA-256 hash.
+        """
+        send_data = {
+            'data_hash': sha256(self.file_data + b'_').hexdigest(),
+            'file_data': (BytesIO(self.file_data), 'test_file'),
+            'file_role': '000'
+        }
+
+        response = self.make_request(send_data)
+
+        self.assertEqual(400, response.status_code,
+                         "Response has to be marked as 'Bad Request'.")
+        self.assertEqual('application/json', response.content_type,
+                         "Has to be a JSON-response.")
+
+        self.assertDictEqual(
+            {'error_code': ERR_MISMATCHED_HASH},
             json.loads(response.data.decode()),
             "Unexpected response data."
         )

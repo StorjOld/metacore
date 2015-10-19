@@ -1,5 +1,6 @@
 import os
 import re
+from hashlib import sha256
 
 from flask import Flask, jsonify, request
 
@@ -27,23 +28,26 @@ def upload_file():
         return response
 
     file_data = request.files['file_data'].stream.read()
+    data_hash = sha256(file_data).hexdigest()
+
+    if data_hash != request.form['data_hash']:
+        response = jsonify(error_code=ERR_MISMATCHED_HASH)
+        response.status_code = 400
+        return response
 
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-    with open(
-            os.path.join(app.config['UPLOAD_FOLDER'],
-                         request.form['data_hash']),
-            'wb'
-    ) as file_to_save:
+    with open(os.path.join(app.config['UPLOAD_FOLDER'], data_hash),
+              'wb') as file_to_save:
         file_to_save.write(file_data)
 
     files.insert().values(
-        hash=request.form['data_hash'],
+        hash=data_hash,
         role=request.form['file_role'],
         size=len(file_data)
     ).execute()
 
-    response = jsonify(data_hash=request.form['data_hash'],
+    response = jsonify(data_hash=data_hash,
                        file_role=request.form['file_role'])
     response.status_code = 201
 
