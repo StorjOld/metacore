@@ -17,7 +17,8 @@ hash_pattern = re.compile(r'^[a-f\d]{64}$')
 def upload_file():
     """
     Upload file to the Node.
-    Check if data_hash is valid SHA-256 hash.
+    Check if data_hash is valid SHA-256 hash matched with uploading file.
+    Check file size.
     Save uploaded file to the Upload Dir and insert a record in the 'files'
     table.
     """
@@ -28,6 +29,12 @@ def upload_file():
         return response
 
     file_data = request.files['file_data'].stream.read()
+
+    if len(file_data) > app.config['MAX_FILE_SIZE']:
+        response = jsonify(error_code=ERR_HUGE_FILE)
+        response.status_code = 400
+        return response
+
     data_hash = sha256(file_data).hexdigest()
 
     if data_hash != request.form['data_hash']:

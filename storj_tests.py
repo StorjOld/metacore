@@ -1,8 +1,10 @@
+import copy
 import json
 import os.path
 import unittest
 from hashlib import sha256
 from io import BytesIO
+from unittest.mock import patch
 
 import storj
 from database import files
@@ -163,6 +165,44 @@ class UploadFileCase(unittest.TestCase):
 
         self.assertDictEqual(
             {'error_code': ERR_MISMATCHED_HASH},
+            json.loads(response.data.decode()),
+            "Unexpected response data."
+        )
+
+        self.assertSetEqual(
+            self.files,
+            set(tuple(_) for _ in files.select().execute()),
+            "Database has to be unchanged."
+        )
+
+        self.assertFalse(os.path.exists(self.file_saving_path),
+                         "File should not be saved.")
+
+    def test_huge_file(self):
+        """
+        Try to upload too big file.
+        """
+        mock_config = copy.deepcopy(self.app.config)
+        mock_config['MAX_FILE_SIZE'] = 128
+
+        with patch('storj.app.config', mock_config):
+
+            big_file_data = b'0' * (self.app.config['MAX_FILE_SIZE'] + 1)
+            send_data = {
+                'data_hash': sha256(big_file_data).hexdigest(),
+                'file_data': (BytesIO(big_file_data), 'test_file'),
+                'file_role': '000'
+            }
+
+            response = self.make_request(send_data)
+
+        self.assertEqual(400, response.status_code,
+                         "Response has to be marked as 'Bad Request'.")
+        self.assertEqual('application/json', response.content_type,
+                         "Has to be a JSON-response.")
+
+        self.assertDictEqual(
+            {'error_code': ERR_HUGE_FILE},
             json.loads(response.data.decode()),
             "Unexpected response data."
         )
