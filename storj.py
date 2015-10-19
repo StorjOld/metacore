@@ -17,7 +17,7 @@ def upload_file():
     """
     Upload file to the Node.
     Check if data_hash is valid SHA-256 hash.
-    Save uploaded file to UPLOAD_FOLDER and insert a record in the 'files'
+    Save uploaded file to the Upload Dir and insert a record in the 'files'
     table.
     """
 

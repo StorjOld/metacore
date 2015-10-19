@@ -22,6 +22,7 @@ class UploadFileCase(unittest.TestCase):
         """
         Switch to test config.
         Remember initial records in the 'files' table.
+        Remember initial files set in the Upload Dir.
         """
         self.app = storj.app
         self.app.config['TESTING'] = True
@@ -36,7 +37,8 @@ class UploadFileCase(unittest.TestCase):
 
     def tearDown(self):
         """
-        Remove records form the 'files' table.
+        Remove new records form the 'files' table.
+        Remove new files from Upload Dir.
         """
         files.delete().where(
             files.c.id not in (_[0] for _ in self.files)
@@ -64,6 +66,9 @@ class UploadFileCase(unittest.TestCase):
         return response
 
     def test_success_upload(self):
+        """
+        Upload file with all valid data.
+        """
         send_data = {
             'data_hash': sha256(self.file_data).hexdigest(),
             'file_data': (BytesIO(self.file_data), 'test_file'),
@@ -72,13 +77,16 @@ class UploadFileCase(unittest.TestCase):
 
         response = self.make_request(send_data)
 
-        self.assertEqual(201, response.status_code)
-        self.assertEqual('application/json', response.content_type)
+        self.assertEqual(201, response.status_code,
+                         "'Created' status code is expected.")
+        self.assertEqual('application/json', response.content_type,
+                         "Has to be a JSON-response.")
 
         self.assertDictEqual(
             {'data_hash': send_data['data_hash'],
              'file_role': send_data['file_role']},
-            json.loads(response.data.decode())
+            json.loads(response.data.decode()),
+            "Unexpected response data."
         )
 
         uploaded_file_record = files.select(
@@ -90,12 +98,17 @@ class UploadFileCase(unittest.TestCase):
 
         self.assertSetEqual(
             self.files | {tuple(uploaded_file_record)},
-            set(tuple(_) for _ in files.select().execute())
+            set(tuple(_) for _ in files.select().execute()),
+            "Only new record has to be inserted in the database. "
+            "No other changes."
         )
 
         try:
             with open(self.file_saving_path, 'rb') as stored_file:
-                self.assertEqual(self.file_data, stored_file.read())
+                self.assertEqual(
+                    self.file_data, stored_file.read(),
+                    "Stored file data does not match with uploaded one."
+                )
         except FileNotFoundError:
             self.assertTrue(False, 'Uploaded file is not saved.')
 
