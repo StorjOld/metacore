@@ -41,6 +41,16 @@ def upload_file():
         response.status_code = 400
         return response
 
+    if app.config['NODE'].limits['incoming'] is not None and (
+                file_size > (
+                        app.config['NODE'].limits['incoming'] -
+                        app.config['NODE'].current['incoming']
+            )
+    ):
+        response = jsonify(error_code=ERR_LIMIT_REACHED)
+        response.status_code = 400
+        return response
+
     data_hash = sha256(file_data).hexdigest()
 
     if data_hash != request.form['data_hash']:
