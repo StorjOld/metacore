@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from hashlib import sha256
@@ -41,6 +42,15 @@ def download_file(data_hash):
         return response
 
     return send_from_directory(app.config['UPLOAD_FOLDER'], data_hash)
+
+
+@app.route('/api/files/', methods=['GET'])
+def files_info():
+    """
+    Get files hash list.
+    """
+    hash_list = [_['hash'] for _ in files.select().execute()]
+    return json.dumps(hash_list), 200, {'Content-Type': 'application/json'}
 
 
 @app.route('/api/nodes/me/', methods=['GET'])
