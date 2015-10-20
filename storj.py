@@ -1,9 +1,12 @@
 import json
 import os
 import re
+from datetime import datetime
+from datetime import timedelta
 from hashlib import sha256
 
 from flask import Flask, jsonify, request, send_from_directory
+from sqlalchemy import and_
 
 from database import audit, files
 from error_codes import *
@@ -33,6 +36,20 @@ def audit_file():
         response = jsonify(error_code=ERR_AUDIT['INVALID_SEED'])
         response.status_code = 400
         return response
+
+    current_attempts = audit.select(
+        and_(
+            audit.c.file_hash == data_hash,
+            audit.c.made_at >= datetime.now() - timedelta(hours=1)
+        )
+    ).count().scalar()
+
+    if current_attempts >= app.config['AUDIT_RATE_LIMITS']['owner']:
+        response = jsonify(error_code=ERR_AUDIT['LIMIT_REACHED'])
+        response.status_code = 400
+        return response
+
+    audit.insert().values(file_hash=data_hash).execute()
 
     with open(
             os.path.join(app.config['UPLOAD_FOLDER'], data_hash),

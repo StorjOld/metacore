@@ -1,10 +1,12 @@
+import copy
 import json
 import os
 import unittest
 from hashlib import sha256
+from unittest.mock import patch
 
 import storj
-from database import files
+from database import audit, files
 from error_codes import *
 
 __author__ = 'karatel'
@@ -55,6 +57,7 @@ class AuditFileCase(unittest.TestCase):
         """
         os.unlink(self.file_saving_path)
         files.delete().where(files.c.hash.in_(self.files_id)).execute()
+        audit.delete().execute()
 
     def make_request(self, data, headers=None):
         """
@@ -145,6 +148,38 @@ class AuditFileCase(unittest.TestCase):
                          "Has to be a JSON.")
 
         self.assertDictEqual({'error_code': ERR_AUDIT['INVALID_SEED']},
+                             json.loads(response.data.decode()),
+                             "Unexpected response data.")
+
+    def test_rate_limit_exceeded_by_owner(self):
+        """
+        Try to audit file with rate limit exceeded by owner.
+        """
+
+        send_data = {
+            'data_hash': self.valid_hash,
+            'challenge_seed': self.challenge_seed
+        }
+
+        headers = {
+            'sender_addres': self.owner,
+            'signature': ''
+        }
+
+        mock_config = copy.deepcopy(self.app.config)
+        mock_config['AUDIT_RATE_LIMITS']['owner'] = 2
+
+        with patch('storj.app.config', mock_config):
+            for i in range(self.app.config['AUDIT_RATE_LIMITS']['owner']):
+                self.make_request(send_data, headers)
+            response = self.make_request(send_data, headers)
+
+        self.assertEqual(400, response.status_code,
+                         "'Bad Request' status code is expected.")
+        self.assertEqual('application/json', response.content_type,
+                         "Has to be a JSON.")
+
+        self.assertDictEqual({'error_code': ERR_AUDIT['LIMIT_REACHED']},
                              json.loads(response.data.decode()),
                              "Unexpected response data.")
 
