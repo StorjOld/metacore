@@ -105,5 +105,13 @@ def download_file(data_hash):
     return send_from_directory(app.config['UPLOAD_FOLDER'], data_hash)
 
 
+@app.route('/api/nodes/me/', methods=['GET'])
+def status_info():
+    """
+    Get the Node status info.
+    """
+    return jsonify(app.config['NODE'].info)
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
