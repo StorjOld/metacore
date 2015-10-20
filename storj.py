@@ -22,6 +22,7 @@ def upload_file():
     Save uploaded file to the Upload Dir and insert a record in the 'files'
     table.
     """
+    node = app.config['NODE']
 
     if not hash_pattern.match(request.form['data_hash']):
         response = jsonify(error_code=ERR_INVALID_HASH)
@@ -36,16 +37,13 @@ def upload_file():
         response.status_code = 400
         return response
 
-    if file_size > app.config['NODE'].capacity:
+    if file_size > node.capacity:
         response = jsonify(error_code=ERR_FULL_DISK)
         response.status_code = 400
         return response
 
-    if app.config['NODE'].limits['incoming'] is not None and (
-                file_size > (
-                        app.config['NODE'].limits['incoming'] -
-                        app.config['NODE'].current['incoming']
-            )
+    if node.limits['incoming'] is not None and (
+                file_size > node.limits['incoming'] - node.current['incoming']
     ):
         response = jsonify(error_code=ERR_LIMIT_REACHED)
         response.status_code = 400
@@ -83,6 +81,8 @@ def download_file(data_hash):
     Download stored file from the Node.
     Check if data_hash is valid SHA-256 hash matched with existing file.
     """
+    node = app.config['NODE']
+
     if not hash_pattern.match(data_hash):
         response = jsonify(error_code=ERR_INVALID_HASH)
         response.status_code = 400
@@ -95,11 +95,8 @@ def download_file(data_hash):
         response.status_code = 400
         return response
 
-    if app.config['NODE'].limits['outgoing'] is not None and (
-                file.size > (
-                        app.config['NODE'].limits['outgoing'] -
-                        app.config['NODE'].current['outgoing']
-            )
+    if node.limits['outgoing'] is not None and (
+                file.size > node.limits['outgoing'] - node.current['outgoing']
     ):
         response = jsonify(error_code=ERR_LIMIT_REACHED)
         response.status_code = 400
