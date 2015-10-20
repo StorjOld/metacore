@@ -21,7 +21,14 @@ def audit_file():
     Generate challenge response by gotten challenge seed.
     """
     data_hash = request.form['data_hash']
+
+    if not hash_pattern.match(data_hash):
+        response = jsonify(error_code=ERR_INVALID_HASH)
+        response.status_code = 400
+        return response
+
     challenge_seed = request.form['challenge_seed']
+
     with open(
             os.path.join(app.config['UPLOAD_FOLDER'], data_hash),
             'rb'
