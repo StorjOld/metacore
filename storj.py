@@ -14,6 +14,33 @@ app.config.from_object('config')
 hash_pattern = re.compile(r'^[a-f\d]{64}$')
 
 
+@app.route('/api/audit/', methods=['POST'])
+def audit_file():
+    """
+    Audit file.
+    Generate challenge response by gotten challenge seed.
+    """
+    data_hash = request.form['data_hash']
+    challenge_seed = request.form['challenge_seed']
+    with open(
+            os.path.join(app.config['UPLOAD_FOLDER'], data_hash),
+            'rb'
+    ) as f:
+        file_data = f.read()
+
+    challenge_response = sha256(file_data +
+                                challenge_seed.encode()).hexdigest()
+
+    response = jsonify(
+        data_hash=data_hash,
+        challenge_seed=challenge_seed,
+        challenge_response=challenge_response
+    )
+    response.status_code = 201
+
+    return response
+
+
 @app.route('/api/files/<data_hash>', methods=['GET'])
 def download_file(data_hash):
     """
