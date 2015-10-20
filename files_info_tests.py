@@ -23,12 +23,13 @@ class GetFilesInfoCase(unittest.TestCase):
         self.app.config['TESTING'] = True
 
         self.files_id = files.insert().values(
-            hash=sha256(b'_').hexdigest(), role='000', size=1
+            hash=sha256(b'_').hexdigest(), role='000', size=1, owner='a' * 26
         ).execute().inserted_primary_key
 
         self.files_id.extend(
             files.insert().values(
-                hash=sha256(b'__').hexdigest(), role='000', size=2
+                hash=sha256(b'__').hexdigest(), role='000', size=2,
+                owner='a' * 26
             ).execute().inserted_primary_key
         )
 
@@ -36,7 +37,7 @@ class GetFilesInfoCase(unittest.TestCase):
         """
         Remove initial records form the 'files' table.
         """
-        files.delete().where(files.c.id.in_(self.files_id)).execute()
+        files.delete().where(files.c.hash.in_(self.files_id)).execute()
 
     def test_success_get_info_with_existing_files(self):
         """

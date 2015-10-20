@@ -38,7 +38,8 @@ class DownloadFileCase(unittest.TestCase):
             stored_file.write(self.file_data)
 
         self.files_id = files.insert().values(
-            hash=self.valid_hash, role='000', size=len(self.file_data)
+            hash=self.valid_hash, role='000', size=len(self.file_data),
+            owner='a' * 26
         ).execute().inserted_primary_key
 
     def tearDown(self):
@@ -47,7 +48,7 @@ class DownloadFileCase(unittest.TestCase):
         Remove initial records form the 'files' table.
         """
         os.unlink(self.file_saving_path)
-        files.delete().where(files.c.id.in_(self.files_id)).execute()
+        files.delete().where(files.c.hash.in_(self.files_id)).execute()
 
     def make_request(self, data_hash):
         """

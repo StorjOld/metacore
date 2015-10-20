@@ -5,7 +5,7 @@ from hashlib import sha256
 
 from flask import Flask, jsonify, request, send_from_directory
 
-from database import files
+from database import audit, files
 from error_codes import *
 
 app = Flask(__name__)
@@ -152,7 +152,8 @@ def upload_file():
     files.insert().values(
         hash=data_hash,
         role=request.form['file_role'],
-        size=len(file_data)
+        size=len(file_data),
+        owner='a' * 26
     ).execute()
 
     response = jsonify(data_hash=data_hash,

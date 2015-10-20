@@ -15,3 +15,7 @@ MAX_FILE_SIZE = 128 * 1024 * 1024
 UPLOAD_FOLDER = os.path.join(BASEDIR, 'storage')
 
 NODE = Node(os.path.join(BASEDIR, 'test_node.json'))
+AUDIT_RATE_LIMITS = {
+    'owner': 100,
+    'other': 50
+}

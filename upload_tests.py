@@ -43,7 +43,7 @@ class UploadFileCase(unittest.TestCase):
         Remove new files from Upload Dir.
         """
         files.delete().where(
-            files.c.id not in (_[0] for _ in self.files)
+            files.c.hash not in (_[0] for _ in self.files)
         ).execute()
 
         added_files = set(
@@ -153,7 +153,7 @@ class UploadFileCase(unittest.TestCase):
         send_data = {
             'data_hash': sha256(self.file_data + b'_').hexdigest(),
             'file_data': (BytesIO(self.file_data), 'test_file'),
-            'file_role': '000'
+            'file_role': '000',
         }
 
         response = self.make_request(send_data)

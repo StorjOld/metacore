@@ -36,8 +36,11 @@ class AuditFileCase(unittest.TestCase):
         with open(self.file_saving_path, 'wb') as stored_file:
             stored_file.write(self.file_data)
 
+        self.owner = 'a' * 26
+
         self.files_id = files.insert().values(
-            hash=self.valid_hash, role='000', size=len(self.file_data)
+            hash=self.valid_hash, role='000', size=len(self.file_data),
+            owner=self.owner
         ).execute().inserted_primary_key
 
         self.challenge_seed = sha256(b'seed').hexdigest()
@@ -51,9 +54,9 @@ class AuditFileCase(unittest.TestCase):
         Remove initial records form the 'files' table.
         """
         os.unlink(self.file_saving_path)
-        files.delete().where(files.c.id.in_(self.files_id)).execute()
+        files.delete().where(files.c.hash.in_(self.files_id)).execute()
 
-    def make_request(self, data):
+    def make_request(self, data, headers=None):
         """
         Make a common request for this Test Case. Get a response.
         :return: Response
@@ -62,6 +65,7 @@ class AuditFileCase(unittest.TestCase):
             response = c.post(
                 path=self.url,
                 data=data,
+                environ_base=headers
             )
 
         return response
@@ -75,7 +79,12 @@ class AuditFileCase(unittest.TestCase):
             'challenge_seed': self.challenge_seed
         }
 
-        response = self.make_request(send_data)
+        headers = {
+            'sender_addres': self.owner,
+            'signature': ''
+        }
+
+        response = self.make_request(send_data, headers)
 
         self.assertEqual(201, response.status_code,
                          "'Created' status code is expected.")
@@ -102,7 +111,12 @@ class AuditFileCase(unittest.TestCase):
             'challenge_seed': self.challenge_seed
         }
 
-        response = self.make_request(send_data)
+        headers = {
+            'sender_addres': self.owner,
+            'signature': ''
+        }
+
+        response = self.make_request(send_data, headers)
 
         self.assertEqual(400, response.status_code,
                          "'Bad Request' status code is expected.")
