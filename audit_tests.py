@@ -113,6 +113,27 @@ class AuditFileCase(unittest.TestCase):
                              json.loads(response.data.decode()),
                              "Unexpected response data.")
 
+    def test_invalid_seed(self):
+        """
+        Try to audit file with invalid challenge seed.
+        """
+
+        send_data = {
+            'data_hash': self.valid_hash,
+            'challenge_seed': 'invalid seed'
+        }
+
+        response = self.make_request(send_data)
+
+        self.assertEqual(400, response.status_code,
+                         "'Bad Request' status code is expected.")
+        self.assertEqual('application/json', response.content_type,
+                         "Has to be a JSON.")
+
+        self.assertDictEqual({'error_code': ERR_AUDIT['INVALID_SEED']},
+                             json.loads(response.data.decode()),
+                             "Unexpected response data.")
+
 
 if __name__ == '__main__':
     unittest.main()

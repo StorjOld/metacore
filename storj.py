@@ -29,6 +29,11 @@ def audit_file():
 
     challenge_seed = request.form['challenge_seed']
 
+    if not hash_pattern.match(challenge_seed):
+        response = jsonify(error_code=ERR_AUDIT['INVALID_SEED'])
+        response.status_code = 400
+        return response
+
     with open(
             os.path.join(app.config['UPLOAD_FOLDER'], data_hash),
             'rb'

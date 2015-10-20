@@ -11,5 +11,6 @@ ERR_TRANSFER = {
 }
 
 ERR_AUDIT = {
-    'INVALID_HASH': 101
+    'INVALID_HASH': 101,
+    'INVALID_SEED': 102
 }
