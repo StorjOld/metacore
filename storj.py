@@ -2,7 +2,7 @@ import os
 import re
 from hashlib import sha256
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 
 from database import files
 from error_codes import *
@@ -75,6 +75,14 @@ def upload_file():
     response.status_code = 201
 
     return response
+
+
+@app.route('/api/files/<data_hash>', methods=['GET'])
+def download_file(data_hash):
+    """
+    Download stored file from the Node.
+    """
+    return send_from_directory(app.config['UPLOAD_FOLDER'], data_hash)
 
 
 if __name__ == '__main__':
