@@ -132,7 +132,7 @@ class UploadFileCase(unittest.TestCase):
                          "Has to be a JSON-response.")
 
         self.assertDictEqual(
-            {'error_code': ERR_INVALID_HASH},
+            {'error_code': ERR_TRANSFER['INVALID_HASH']},
             json.loads(response.data.decode()),
             "Unexpected response data."
         )
@@ -164,7 +164,7 @@ class UploadFileCase(unittest.TestCase):
                          "Has to be a JSON-response.")
 
         self.assertDictEqual(
-            {'error_code': ERR_MISMATCHED_HASH},
+            {'error_code': ERR_TRANSFER['MISMATCHED_HASH']},
             json.loads(response.data.decode()),
             "Unexpected response data."
         )
@@ -202,7 +202,7 @@ class UploadFileCase(unittest.TestCase):
                          "Has to be a JSON-response.")
 
         self.assertDictEqual(
-            {'error_code': ERR_HUGE_FILE},
+            {'error_code': ERR_TRANSFER['HUGE_FILE']},
             json.loads(response.data.decode()),
             "Unexpected response data."
         )
@@ -239,7 +239,7 @@ class UploadFileCase(unittest.TestCase):
                          "Has to be a JSON-response.")
 
         self.assertDictEqual(
-            {'error_code': ERR_FULL_DISK},
+            {'error_code': ERR_TRANSFER['FULL_DISK']},
             json.loads(response.data.decode()),
             "Unexpected response data."
         )
@@ -276,7 +276,7 @@ class UploadFileCase(unittest.TestCase):
                          "Has to be a JSON-response.")
 
         self.assertDictEqual(
-            {'error_code': ERR_LIMIT_REACHED},
+            {'error_code': ERR_TRANSFER['LIMIT_REACHED']},
             json.loads(response.data.decode()),
             "Unexpected response data."
         )

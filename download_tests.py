@@ -86,7 +86,7 @@ class DownloadFileCase(unittest.TestCase):
         self.assertEqual('application/json', response.content_type,
                          "Has to be a JSON.")
 
-        self.assertDictEqual({'error_code': ERR_INVALID_HASH},
+        self.assertDictEqual({'error_code': ERR_TRANSFER['INVALID_HASH']},
                              json.loads(response.data.decode()),
                              "Unexpected response data.")
 
@@ -102,7 +102,7 @@ class DownloadFileCase(unittest.TestCase):
         self.assertEqual('application/json', response.content_type,
                          "Has to be a JSON.")
 
-        self.assertDictEqual({'error_code': ERR_NOT_FOUND},
+        self.assertDictEqual({'error_code': ERR_TRANSFER['NOT_FOUND']},
                              json.loads(response.data.decode()),
                              "Unexpected response data.")
 
@@ -122,7 +122,7 @@ class DownloadFileCase(unittest.TestCase):
         self.assertEqual('application/json', response.content_type,
                          "Has to be a JSON.")
 
-        self.assertDictEqual({'error_code': ERR_LIMIT_REACHED},
+        self.assertDictEqual({'error_code': ERR_TRANSFER['LIMIT_REACHED']},
                              json.loads(response.data.decode()),
                              "Unexpected response data.")
 

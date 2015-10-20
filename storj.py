@@ -23,7 +23,7 @@ def audit_file():
     data_hash = request.form['data_hash']
 
     if not hash_pattern.match(data_hash):
-        response = jsonify(error_code=ERR_INVALID_HASH)
+        response = jsonify(error_code=ERR_TRANSFER['INVALID_HASH'])
         response.status_code = 400
         return response
 
@@ -57,21 +57,21 @@ def download_file(data_hash):
     node = app.config['NODE']
 
     if not hash_pattern.match(data_hash):
-        response = jsonify(error_code=ERR_INVALID_HASH)
+        response = jsonify(error_code=ERR_TRANSFER['INVALID_HASH'])
         response.status_code = 400
         return response
 
     file = files.select(files.c.hash == data_hash).execute().first()
 
     if not file:
-        response = jsonify(error_code=ERR_NOT_FOUND)
+        response = jsonify(error_code=ERR_TRANSFER['NOT_FOUND'])
         response.status_code = 400
         return response
 
     if node.limits['outgoing'] is not None and (
                 file.size > node.limits['outgoing'] - node.current['outgoing']
     ):
-        response = jsonify(error_code=ERR_LIMIT_REACHED)
+        response = jsonify(error_code=ERR_TRANSFER['LIMIT_REACHED'])
         response.status_code = 400
         return response
 
@@ -107,7 +107,7 @@ def upload_file():
     node = app.config['NODE']
 
     if not hash_pattern.match(request.form['data_hash']):
-        response = jsonify(error_code=ERR_INVALID_HASH)
+        response = jsonify(error_code=ERR_TRANSFER['INVALID_HASH'])
         response.status_code = 400
         return response
 
@@ -115,26 +115,26 @@ def upload_file():
     file_size = len(file_data)
 
     if file_size > app.config['MAX_FILE_SIZE']:
-        response = jsonify(error_code=ERR_HUGE_FILE)
+        response = jsonify(error_code=ERR_TRANSFER['HUGE_FILE'])
         response.status_code = 400
         return response
 
     if file_size > node.capacity:
-        response = jsonify(error_code=ERR_FULL_DISK)
+        response = jsonify(error_code=ERR_TRANSFER['FULL_DISK'])
         response.status_code = 400
         return response
 
     if node.limits['incoming'] is not None and (
                 file_size > node.limits['incoming'] - node.current['incoming']
     ):
-        response = jsonify(error_code=ERR_LIMIT_REACHED)
+        response = jsonify(error_code=ERR_TRANSFER['LIMIT_REACHED'])
         response.status_code = 400
         return response
 
     data_hash = sha256(file_data).hexdigest()
 
     if data_hash != request.form['data_hash']:
-        response = jsonify(error_code=ERR_MISMATCHED_HASH)
+        response = jsonify(error_code=ERR_TRANSFER['MISMATCHED_HASH'])
         response.status_code = 400
         return response
 
