@@ -81,9 +81,17 @@ def upload_file():
 def download_file(data_hash):
     """
     Download stored file from the Node.
+    Check if data_hash is valid SHA-256 hash matched with existing file.
     """
     if not hash_pattern.match(data_hash):
         response = jsonify(error_code=ERR_INVALID_HASH)
+        response.status_code = 400
+        return response
+
+    file = files.select(files.c.hash == data_hash).execute().first()
+
+    if not file:
+        response = jsonify(error_code=ERR_NOT_FOUND)
         response.status_code = 400
         return response
 

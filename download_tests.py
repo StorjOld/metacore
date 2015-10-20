@@ -88,6 +88,22 @@ class DownloadFileCase(unittest.TestCase):
                              json.loads(response.data.decode()),
                              "Unexpected response data.")
 
+    def test_invalid_hash(self):
+        """
+        Try to download nonexistent file.
+        """
+
+        response = self.make_request(sha256(self.file_data + b'_').hexdigest())
+
+        self.assertEqual(400, response.status_code,
+                         "'Bad Request' status code is expected.")
+        self.assertEqual('application/json', response.content_type,
+                         "Has to be a JSON.")
+
+        self.assertDictEqual({'error_code': ERR_NOT_FOUND},
+                             json.loads(response.data.decode()),
+                             "Unexpected response data.")
+
 
 if __name__ == '__main__':
     unittest.main()
