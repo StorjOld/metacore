@@ -88,7 +88,7 @@ class DownloadFileCase(unittest.TestCase):
                              json.loads(response.data.decode()),
                              "Unexpected response data.")
 
-    def test_invalid_hash(self):
+    def test_nonexistent_file(self):
         """
         Try to download nonexistent file.
         """
