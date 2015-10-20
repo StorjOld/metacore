@@ -23,7 +23,7 @@ def audit_file():
     data_hash = request.form['data_hash']
 
     if not hash_pattern.match(data_hash):
-        response = jsonify(error_code=ERR_TRANSFER['INVALID_HASH'])
+        response = jsonify(error_code=ERR_AUDIT['INVALID_HASH'])
         response.status_code = 400
         return response
 

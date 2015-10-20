@@ -9,3 +9,7 @@ ERR_TRANSFER = {
     'LIMIT_REACHED': 202,
     'NOT_FOUND': 301
 }
+
+ERR_AUDIT = {
+    'INVALID_HASH': 101
+}

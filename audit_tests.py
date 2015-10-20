@@ -109,7 +109,7 @@ class AuditFileCase(unittest.TestCase):
         self.assertEqual('application/json', response.content_type,
                          "Has to be a JSON.")
 
-        self.assertDictEqual({'error_code': ERR_TRANSFER['INVALID_HASH']},
+        self.assertDictEqual({'error_code': ERR_AUDIT['INVALID_HASH']},
                              json.loads(response.data.decode()),
                              "Unexpected response data.")
 
