@@ -45,7 +45,7 @@ class DownloadFileCase(unittest.TestCase):
         Remove initial records form the 'files' table.
         """
         os.unlink(self.file_saving_path)
-        files.delete().where(files.c.id in self.files_id).execute()
+        files.delete().where(files.c.id.in_(self.files_id)).execute()
 
     def make_request(self, data_hash):
         """
@@ -71,6 +71,22 @@ class DownloadFileCase(unittest.TestCase):
 
         self.assertEqual(response.data, self.file_data,
                          "Stored file content is expected.")
+
+    def test_invalid_hash(self):
+        """
+        Try to download file with invalid hash.
+        """
+
+        response = self.make_request('invalid hash')
+
+        self.assertEqual(400, response.status_code,
+                         "'Bad Request' status code is expected.")
+        self.assertEqual('application/json', response.content_type,
+                         "Has to be a JSON.")
+
+        self.assertDictEqual({'error_code': ERR_INVALID_HASH},
+                             json.loads(response.data.decode()),
+                             "Unexpected response data.")
 
 
 if __name__ == '__main__':

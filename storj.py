@@ -82,6 +82,11 @@ def download_file(data_hash):
     """
     Download stored file from the Node.
     """
+    if not hash_pattern.match(data_hash):
+        response = jsonify(error_code=ERR_INVALID_HASH)
+        response.status_code = 400
+        return response
+
     return send_from_directory(app.config['UPLOAD_FOLDER'], data_hash)
 
 
