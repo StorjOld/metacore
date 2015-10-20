@@ -13,6 +13,44 @@ app.config.from_object('config')
 hash_pattern = re.compile(r'^[a-f\d]{64}$')
 
 
+@app.route('/api/files/<data_hash>', methods=['GET'])
+def download_file(data_hash):
+    """
+    Download stored file from the Node.
+    Check if data_hash is valid SHA-256 hash matched with existing file.
+    """
+    node = app.config['NODE']
+
+    if not hash_pattern.match(data_hash):
+        response = jsonify(error_code=ERR_INVALID_HASH)
+        response.status_code = 400
+        return response
+
+    file = files.select(files.c.hash == data_hash).execute().first()
+
+    if not file:
+        response = jsonify(error_code=ERR_NOT_FOUND)
+        response.status_code = 400
+        return response
+
+    if node.limits['outgoing'] is not None and (
+                file.size > node.limits['outgoing'] - node.current['outgoing']
+    ):
+        response = jsonify(error_code=ERR_LIMIT_REACHED)
+        response.status_code = 400
+        return response
+
+    return send_from_directory(app.config['UPLOAD_FOLDER'], data_hash)
+
+
+@app.route('/api/nodes/me/', methods=['GET'])
+def status_info():
+    """
+    Get the Node status info.
+    """
+    return jsonify(app.config['NODE'].info)
+
+
 @app.route('/api/files/', methods=['POST'])
 def upload_file():
     """
@@ -73,44 +111,6 @@ def upload_file():
     response.status_code = 201
 
     return response
-
-
-@app.route('/api/files/<data_hash>', methods=['GET'])
-def download_file(data_hash):
-    """
-    Download stored file from the Node.
-    Check if data_hash is valid SHA-256 hash matched with existing file.
-    """
-    node = app.config['NODE']
-
-    if not hash_pattern.match(data_hash):
-        response = jsonify(error_code=ERR_INVALID_HASH)
-        response.status_code = 400
-        return response
-
-    file = files.select(files.c.hash == data_hash).execute().first()
-
-    if not file:
-        response = jsonify(error_code=ERR_NOT_FOUND)
-        response.status_code = 400
-        return response
-
-    if node.limits['outgoing'] is not None and (
-                file.size > node.limits['outgoing'] - node.current['outgoing']
-    ):
-        response = jsonify(error_code=ERR_LIMIT_REACHED)
-        response.status_code = 400
-        return response
-
-    return send_from_directory(app.config['UPLOAD_FOLDER'], data_hash)
-
-
-@app.route('/api/nodes/me/', methods=['GET'])
-def status_info():
-    """
-    Get the Node status info.
-    """
-    return jsonify(app.config['NODE'].info)
 
 
 if __name__ == '__main__':
