@@ -45,6 +45,8 @@ class AuditFileCase(unittest.TestCase):
             owner=self.owner
         ).execute().inserted_primary_key
 
+        audit.delete().execute()
+
         self.challenge_seed = sha256(b'seed').hexdigest()
         self.challenge_response = sha256(
             self.file_data + self.challenge_seed.encode()
@@ -83,7 +85,7 @@ class AuditFileCase(unittest.TestCase):
         }
 
         headers = {
-            'sender_addres': self.owner,
+            'sender_address': self.owner,
             'signature': ''
         }
 
@@ -115,7 +117,7 @@ class AuditFileCase(unittest.TestCase):
         }
 
         headers = {
-            'sender_addres': self.owner,
+            'sender_address': self.owner,
             'signature': ''
         }
 
@@ -162,7 +164,7 @@ class AuditFileCase(unittest.TestCase):
         }
 
         headers = {
-            'sender_addres': self.owner,
+            'sender_address': self.owner,
             'signature': ''
         }
 
@@ -171,6 +173,38 @@ class AuditFileCase(unittest.TestCase):
 
         with patch('storj.app.config', mock_config):
             for i in range(self.app.config['AUDIT_RATE_LIMITS']['owner']):
+                self.make_request(send_data, headers)
+            response = self.make_request(send_data, headers)
+
+        self.assertEqual(400, response.status_code,
+                         "'Bad Request' status code is expected.")
+        self.assertEqual('application/json', response.content_type,
+                         "Has to be a JSON.")
+
+        self.assertDictEqual({'error_code': ERR_AUDIT['LIMIT_REACHED']},
+                             json.loads(response.data.decode()),
+                             "Unexpected response data.")
+
+    def test_rate_limit_exceeded_by_other(self):
+        """
+        Try to audit file with rate limit exceeded by other user.
+        """
+
+        send_data = {
+            'data_hash': self.valid_hash,
+            'challenge_seed': self.challenge_seed
+        }
+
+        headers = {
+            'sender_address': self.owner + '_',
+            'signature': ''
+        }
+
+        mock_config = copy.deepcopy(self.app.config)
+        mock_config['AUDIT_RATE_LIMITS']['other'] = 2
+
+        with patch('storj.app.config', mock_config):
+            for i in range(self.app.config['AUDIT_RATE_LIMITS']['other']):
                 self.make_request(send_data, headers)
             response = self.make_request(send_data, headers)
 

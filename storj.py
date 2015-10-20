@@ -37,19 +37,26 @@ def audit_file():
         response.status_code = 400
         return response
 
+    sender = request.environ['sender_address']
+    file = files.select(files.c.hash == data_hash).execute().first()
+    is_owner = sender == file.owner
+
     current_attempts = audit.select(
         and_(
             audit.c.file_hash == data_hash,
+            audit.c.is_owners == is_owner,
             audit.c.made_at >= datetime.now() - timedelta(hours=1)
         )
     ).count().scalar()
 
-    if current_attempts >= app.config['AUDIT_RATE_LIMITS']['owner']:
+    limits_section = 'owner' if is_owner else 'other'
+
+    if current_attempts >= app.config['AUDIT_RATE_LIMITS'][limits_section]:
         response = jsonify(error_code=ERR_AUDIT['LIMIT_REACHED'])
         response.status_code = 400
         return response
 
-    audit.insert().values(file_hash=data_hash).execute()
+    audit.insert().values(file_hash=data_hash, is_owners=is_owner).execute()
 
     with open(
             os.path.join(app.config['UPLOAD_FOLDER'], data_hash),
