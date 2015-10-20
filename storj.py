@@ -95,6 +95,16 @@ def download_file(data_hash):
         response.status_code = 400
         return response
 
+    if app.config['NODE'].limits['outgoing'] is not None and (
+                file.size > (
+                        app.config['NODE'].limits['outgoing'] -
+                        app.config['NODE'].current['outgoing']
+            )
+    ):
+        response = jsonify(error_code=ERR_LIMIT_REACHED)
+        response.status_code = 400
+        return response
+
     return send_from_directory(app.config['UPLOAD_FOLDER'], data_hash)
 
 

@@ -1,7 +1,9 @@
+import copy
 import json
 import os.path
 import unittest
 from hashlib import sha256
+from unittest.mock import patch
 
 import storj
 from database import files
@@ -101,6 +103,26 @@ class DownloadFileCase(unittest.TestCase):
                          "Has to be a JSON.")
 
         self.assertDictEqual({'error_code': ERR_NOT_FOUND},
+                             json.loads(response.data.decode()),
+                             "Unexpected response data.")
+
+    def test_bandwidth_limit(self):
+        """
+        Try to download file with bandwidth limit reached.
+        """
+
+        mock_config = copy.deepcopy(self.app.config)
+        mock_config['NODE'].set_limits(outgoing=1)
+
+        with patch('storj.app.config', mock_config):
+            response = self.make_request(self.valid_hash)
+
+        self.assertEqual(400, response.status_code,
+                         "'Bad Request' status code is expected.")
+        self.assertEqual('application/json', response.content_type,
+                         "Has to be a JSON.")
+
+        self.assertDictEqual({'error_code': ERR_LIMIT_REACHED},
                              json.loads(response.data.decode()),
                              "Unexpected response data.")
 
