@@ -19,3 +19,4 @@ AUDIT_RATE_LIMITS = {
     'owner': 100,
     'other': 50
 }
+BLACKLIST_FILE = os.path.join(BASEDIR, 'Blacklist.txt')

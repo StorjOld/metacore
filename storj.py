@@ -46,14 +46,16 @@ def audit_file():
         response.status_code = 400
         return response
 
+    with open(app.config['BLACKLIST_FILE']) as fp:
+        if data_hash in fp.readlines():
+            return Response()
+
     challenge_seed = request.form['challenge_seed']
 
     if not hash_pattern.match(challenge_seed):
         response = jsonify(error_code=ERR_AUDIT['INVALID_SEED'])
         response.status_code = 400
         return response
-
-    sender = request.environ['sender_address']
 
     file = files.select(files.c.hash == data_hash).execute().first()
 
@@ -62,7 +64,7 @@ def audit_file():
         response.status_code = 404
         return response
 
-    is_owner = sender == file.owner
+    is_owner = sender_address == file.owner
 
     current_attempts = audit.select(
         and_(
@@ -124,6 +126,10 @@ def download_file(data_hash):
         response.status_code = 400
         return response
 
+    with open(app.config['BLACKLIST_FILE']) as fp:
+        if data_hash in fp.readlines():
+            return Response()
+
     file = files.select(files.c.hash == data_hash).execute().first()
 
     if not file or file.role[1] != '0' and file.owner != sender_address:
@@ -164,7 +170,10 @@ def files_info():
     """
     Get files hash list.
     """
-    hash_list = [_['hash'] for _ in files.select().execute()]
+    with open(app.config['BLACKLIST_FILE']) as fp:
+        blocked_hashes = tuple(fp.readlines())
+    hash_list = [_['hash'] for _ in files.select().execute()
+                 if _['hash'] not in blocked_hashes]
     return json.dumps(hash_list), 200, {'Content-Type': 'application/json'}
 
 
@@ -202,6 +211,10 @@ def upload_file():
         response = jsonify(error_code=ERR_TRANSFER['INVALID_HASH'])
         response.status_code = 400
         return response
+
+    with open(app.config['BLACKLIST_FILE']) as fp:
+        if request.form['data_hash'] in fp.readlines():
+            return Response()
 
     file_data = request.files['file_data'].stream.read()
     file_size = len(file_data)

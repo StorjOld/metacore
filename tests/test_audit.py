@@ -26,6 +26,7 @@ class AuditFileCase(unittest.TestCase):
         Create initial files set in the Upload Dir.
         Create initial records in the 'files' table.
         Remember challenge seed and response.
+        Remember initial blacklist content.
         """
         self.app = storj.app
         self.app.config['TESTING'] = True
@@ -34,6 +35,12 @@ class AuditFileCase(unittest.TestCase):
         self.data_hash = sha256(self.file_data).hexdigest()
         valid_signature = test_btctx_api.sign_unicode(test_owner_wif,
                                                       self.data_hash)
+
+        self.blocked_data = b'blocked_data'
+        self.blocked_hash = sha256(self.blocked_data).hexdigest()
+        with open(self.app.config['BLACKLIST_FILE'], 'r+') as fp:
+            self.initial_blacklist = fp.read()
+            fp.writelines((self.blocked_hash,))
 
         self.file_saving_path = os.path.join(
             self.app.config['UPLOAD_FOLDER'], self.data_hash
@@ -78,12 +85,16 @@ class AuditFileCase(unittest.TestCase):
         Switch off some test configs.
         Remove initial files from Upload Dir.
         Remove initial records form the 'files' table.
+        Return initial blacklist content.
         """
         self.patcher.stop()
 
         os.unlink(self.file_saving_path)
         files.delete().where(files.c.hash.in_(self.files_id)).execute()
         audit.delete().execute()
+
+        with open(self.app.config['BLACKLIST_FILE'], 'w') as fp:
+            fp.write(self.initial_blacklist)
 
     def make_request(self, is_owner=True):
         """
@@ -172,6 +183,20 @@ class AuditFileCase(unittest.TestCase):
             json.loads(response.data.decode()),
             "Unexpected response data."
         )
+
+    def test_blocked_hash(self):
+        """
+        Try to audit file with blacklisted SHA-256 hash.
+        """
+        self.send_data['data_hash'] = self.blocked_hash
+        self.headers['signature'] = test_btctx_api.sign_unicode(
+            test_owner_wif, self.send_data['data_hash']
+        )
+        response = self.make_request()
+
+        self.assertEqual(200, response.status_code,
+                         "'OK' status code is expected.")
+        self.assertFalse(response.data, "Nothing is expected.")
 
     def test_private_by_other(self):
         """
