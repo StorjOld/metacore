@@ -43,7 +43,7 @@ class DownloadFileCase(unittest.TestCase):
 
         self.files_id = files.insert().values(
             hash=self.data_hash, role='000', size=len(self.file_data),
-            owner='a' * 26
+            owner=test_owner_address
         ).execute().inserted_primary_key
 
         self.headers = {
@@ -85,9 +85,9 @@ class DownloadFileCase(unittest.TestCase):
 
         return response
 
-    def test_success_download(self):
+    def test_success_download_public_by_owner(self):
         """
-        Download file with all valid params.
+        Download public file by owner with all valid params.
         """
 
         response = self.make_request()
@@ -99,6 +99,58 @@ class DownloadFileCase(unittest.TestCase):
 
         self.assertEqual(response.data, self.file_data,
                          "Stored file content is expected.")
+
+    def test_success_download_public_by_other(self):
+        """
+        Download public file by other with all valid params.
+        """
+
+        response = self.make_request(False)
+
+        self.assertEqual(200, response.status_code,
+                         "'OK' status code is expected.")
+        self.assertEqual('application/octet-stream', response.content_type,
+                         "Has to be an octet-stream.")
+
+        self.assertEqual(response.data, self.file_data,
+                         "Stored file content is expected.")
+
+    def test_success_download_private_by_owner(self):
+        """
+        Download private file by owner with all valid params.
+        """
+        files.update().where(
+            files.c.hash == self.data_hash
+        ).values(role='020').execute()
+
+        response = self.make_request()
+
+        self.assertEqual(200, response.status_code,
+                         "'OK' status code is expected.")
+        self.assertEqual('application/octet-stream', response.content_type,
+                         "Has to be an octet-stream.")
+
+        self.assertEqual(response.data, self.file_data,
+                         "Stored file content is expected.")
+
+    def test_private_by_other(self):
+        """
+        Try to download private file by other.
+        """
+        files.update().where(
+            files.c.hash == self.data_hash
+        ).values(role='020').execute()
+
+        response = self.make_request(False)
+
+        self.assertEqual(400, response.status_code,
+                         "'Bad Request' status code is expected.")
+        self.assertEqual('application/json', response.content_type,
+                         "Has to be a JSON.")
+
+        self.assertDictEqual({'error_code': ERR_TRANSFER['NOT_FOUND']},
+                             json.loads(response.data.decode()),
+                             "Unexpected response data.")
 
     def test_invalid_hash(self):
         """

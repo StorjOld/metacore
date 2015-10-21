@@ -117,7 +117,7 @@ def download_file(data_hash):
 
     file = files.select(files.c.hash == data_hash).execute().first()
 
-    if not file:
+    if not file or file.role[1] != '0' and file.owner != sender_address:
         response = jsonify(error_code=ERR_TRANSFER['NOT_FOUND'])
         response.status_code = 400
         return response
