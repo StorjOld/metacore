@@ -30,18 +30,19 @@ class DownloadFileCase(unittest.TestCase):
         self.app.config['TESTING'] = True
 
         self.file_data = b'existing file data'
-        self.valid_hash = sha256(self.file_data).hexdigest()
-        valid_signature = test_btctx_api.sign_unicode(test_owner_wif, self.valid_hash)
+        self.data_hash = sha256(self.file_data).hexdigest()
+        valid_signature = test_btctx_api.sign_unicode(test_owner_wif,
+                                                      self.data_hash)
 
         self.file_saving_path = os.path.join(
-            self.app.config['UPLOAD_FOLDER'], self.valid_hash
+            self.app.config['UPLOAD_FOLDER'], self.data_hash
         )
 
         with open(self.file_saving_path, 'wb') as stored_file:
             stored_file.write(self.file_data)
 
         self.files_id = files.insert().values(
-            hash=self.valid_hash, role='000', size=len(self.file_data),
+            hash=self.data_hash, role='000', size=len(self.file_data),
             owner='a' * 26
         ).execute().inserted_primary_key
 
@@ -64,18 +65,16 @@ class DownloadFileCase(unittest.TestCase):
         os.unlink(self.file_saving_path)
         files.delete().where(files.c.hash.in_(self.files_id)).execute()
 
-    def make_request(self, data_hash, headers=None):
+    def make_request(self):
         """
         Make a common request for this Test Case. Get a response.
         :return: Response
         """
-        if headers is None:
-            headers = self.headers
 
         with self.app.test_client() as c:
             response = c.get(
-                path=self.base_url + data_hash,
-                environ_base=headers
+                path=self.base_url + self.data_hash,
+                environ_base=self.headers
             )
 
         return response
@@ -85,7 +84,7 @@ class DownloadFileCase(unittest.TestCase):
         Download file with all valid params.
         """
 
-        response = self.make_request(self.valid_hash)
+        response = self.make_request()
 
         self.assertEqual(200, response.status_code,
                          "'OK' status code is expected.")
@@ -100,7 +99,7 @@ class DownloadFileCase(unittest.TestCase):
         Try to download file with invalid hash.
         """
         self.headers['signature'] = self.headers['signature'].swapcase()
-        response = self.make_request(self.valid_hash)
+        response = self.make_request()
 
         self.assertEqual(400, response.status_code,
                          "'Bad Request' status code is expected.")
@@ -115,8 +114,8 @@ class DownloadFileCase(unittest.TestCase):
         """
         Try to download file with invalid signature.
         """
-
-        response = self.make_request('invalid hash')
+        self.data_hash = 'invalid hash'
+        response = self.make_request()
 
         self.assertEqual(400, response.status_code,
                          "'Bad Request' status code is expected.")
@@ -131,11 +130,11 @@ class DownloadFileCase(unittest.TestCase):
         """
         Try to download nonexistent file.
         """
-        data_hash = sha256(self.file_data + b'_').hexdigest()
+        self.data_hash = sha256(self.file_data + b'_').hexdigest()
         self.headers['signature'] = test_btctx_api.sign_unicode(test_owner_wif,
-                                                           data_hash)
+                                                                self.data_hash)
 
-        response = self.make_request(data_hash)
+        response = self.make_request()
 
         self.assertEqual(400, response.status_code,
                          "'Bad Request' status code is expected.")
@@ -155,7 +154,7 @@ class DownloadFileCase(unittest.TestCase):
         mock_config['NODE'].set_limits(outgoing=1)
 
         with patch('storj.app.config', mock_config):
-            response = self.make_request(self.valid_hash)
+            response = self.make_request()
 
         self.assertEqual(400, response.status_code,
                          "'Bad Request' status code is expected.")
