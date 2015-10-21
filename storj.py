@@ -59,7 +59,7 @@ def audit_file():
 
     if not file or file.role[1] != '0' and file.owner != sender_address:
         response = jsonify(error_code=ERR_AUDIT['NOT_FOUND'])
-        response.status_code = 400
+        response.status_code = 404
         return response
 
     is_owner = sender == file.owner
@@ -128,7 +128,7 @@ def download_file(data_hash):
 
     if not file or file.role[1] != '0' and file.owner != sender_address:
         response = jsonify(error_code=ERR_TRANSFER['NOT_FOUND'])
-        response.status_code = 400
+        response.status_code = 404
         return response
 
     if node.limits['outgoing'] is not None and (
@@ -153,7 +153,7 @@ def download_file(data_hash):
             return response
         else:
             response = jsonify(error_code=ERR_TRANSFER['NOT_FOUND'])
-            response.status_code = 400
+            response.status_code = 404
             return response
 
     return send_from_directory(app.config['UPLOAD_FOLDER'], data_hash)

@@ -143,7 +143,7 @@ class DownloadFileCase(unittest.TestCase):
 
         response = self.make_request(False)
 
-        self.assertEqual(400, response.status_code,
+        self.assertEqual(404, response.status_code,
                          "'Bad Request' status code is expected.")
         self.assertEqual('application/json', response.content_type,
                          "Has to be a JSON.")
@@ -196,7 +196,7 @@ class DownloadFileCase(unittest.TestCase):
 
         response = self.make_request()
 
-        self.assertEqual(400, response.status_code,
+        self.assertEqual(404, response.status_code,
                          "'Bad Request' status code is expected.")
         self.assertEqual('application/json', response.content_type,
                          "Has to be a JSON.")
