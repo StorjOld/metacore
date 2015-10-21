@@ -8,6 +8,7 @@ from unittest.mock import patch
 import storj
 from database import audit, files
 from error_codes import *
+from tests import *
 
 __author__ = 'karatel'
 
@@ -31,6 +32,8 @@ class AuditFileCase(unittest.TestCase):
 
         self.file_data = b'existing file data'
         self.valid_hash = sha256(self.file_data).hexdigest()
+        valid_signature = btctx_api.sign_unicode(btctx_wif, self.valid_hash)
+
         self.file_saving_path = os.path.join(
             self.app.config['UPLOAD_FOLDER'], self.valid_hash
         )
@@ -38,7 +41,7 @@ class AuditFileCase(unittest.TestCase):
         with open(self.file_saving_path, 'wb') as stored_file:
             stored_file.write(self.file_data)
 
-        self.owner = 'a' * 26
+        self.owner = btctx_address
 
         self.files_id = files.insert().values(
             hash=self.valid_hash, role='000', size=len(self.file_data),
@@ -59,14 +62,25 @@ class AuditFileCase(unittest.TestCase):
 
         self.headers = {
             'sender_address': self.owner,
-            'signature': ''
+            'signature': valid_signature
         }
+
+        other_key = btctx_api.create_key()
+        self.other_address = btctx_api.get_address(other_key)
+        self.other_signature = btctx_api.sign_unicode(other_key,
+                                                      self.valid_hash)
+
+        self.patcher = patch('storj.BTCTX_API', btctx_api)
+        self.patcher.start()
 
     def tearDown(self):
         """
+        Switch off some test configs.
         Remove initial files from Upload Dir.
         Remove initial records form the 'files' table.
         """
+        self.patcher.stop()
+
         os.unlink(self.file_saving_path)
         files.delete().where(files.c.hash.in_(self.files_id)).execute()
         audit.delete().execute()
@@ -86,10 +100,34 @@ class AuditFileCase(unittest.TestCase):
 
         return response
 
-    def test_success_audit(self):
+    def test_success_audit_by_owner(self):
         """
-        Audit file with all valid data.
+        Audit file b y owner with all valid data.
         """
+
+        response = self.make_request()
+
+        self.assertEqual(201, response.status_code,
+                         "'Created' status code is expected.")
+        self.assertEqual('application/json', response.content_type,
+                         "Has to be a JSON-response.")
+
+        self.assertDictEqual(
+            {
+                'data_hash': self.send_data['data_hash'],
+                'challenge_seed': self.send_data['challenge_seed'],
+                'challenge_response': self.challenge_response
+            },
+            json.loads(response.data.decode()),
+            "Unexpected response data."
+        )
+
+    def test_success_audit_by_other(self):
+        """
+        Audit file b y other with all valid data.
+        """
+        self.headers['sender_address'] = self.other_address
+        self.headers['signature'] = self.other_signature
 
         response = self.make_request()
 
@@ -114,6 +152,9 @@ class AuditFileCase(unittest.TestCase):
         """
 
         self.send_data['data_hash'] = 'invalid hash'
+        self.headers['signature'] = btctx_api.sign_unicode(
+            btctx_wif, self.send_data['data_hash']
+        )
         response = self.make_request()
 
         self.assertEqual(400, response.status_code,
@@ -122,6 +163,23 @@ class AuditFileCase(unittest.TestCase):
                          "Has to be a JSON.")
 
         self.assertDictEqual({'error_code': ERR_AUDIT['INVALID_HASH']},
+                             json.loads(response.data.decode()),
+                             "Unexpected response data.")
+
+    def test_invalid_signature(self):
+        """
+        Try to audit file with invalid signature.
+        """
+
+        self.headers['signature'] = self.headers['signature'].swapcase()
+        response = self.make_request()
+
+        self.assertEqual(400, response.status_code,
+                         "'Bad Request' status code is expected.")
+        self.assertEqual('application/json', response.content_type,
+                         "Has to be a JSON.")
+
+        self.assertDictEqual({'error_code': ERR_AUDIT['INVALID_SIGNATURE']},
                              json.loads(response.data.decode()),
                              "Unexpected response data.")
 
@@ -168,8 +226,8 @@ class AuditFileCase(unittest.TestCase):
         Try to audit file with rate limit exceeded by other user.
         """
 
-        self.headers['sender_address'] = \
-            self.headers['sender_address'].swapcase()
+        self.headers['sender_address'] = self.other_address
+        self.headers['signature'] = self.other_signature
 
         mock_config = copy.deepcopy(self.app.config)
         mock_config['AUDIT_RATE_LIMITS']['other'] = 2
