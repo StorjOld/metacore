@@ -15,7 +15,7 @@ __author__ = 'karatel'
 
 class DownloadFileCase(unittest.TestCase):
     """
-    Test downloading files to the Node.
+    Test downloading files from the Node.
     """
 
     base_url = '/api/files/'
