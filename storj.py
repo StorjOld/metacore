@@ -177,7 +177,7 @@ def upload_file():
         hash=data_hash,
         role=request.form['file_role'],
         size=len(file_data),
-        owner='a' * 26
+        owner=request.environ['sender_address']
     ).execute()
 
     response = jsonify(data_hash=data_hash,

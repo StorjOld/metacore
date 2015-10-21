@@ -43,6 +43,11 @@ class UploadFileCase(unittest.TestCase):
             'file_role': '000'
         }
 
+        self.headers = {
+            'sender_address': 'a' * 26,
+            'sender_signature': ''
+        }
+
     def tearDown(self):
         """
         Remove new records form the 'files' table.
@@ -59,16 +64,20 @@ class UploadFileCase(unittest.TestCase):
         for filename in added_files:
             os.unlink(os.path.join(self.app.config['UPLOAD_FOLDER'], filename))
 
-    def make_request(self, data):
+    def make_request(self, data, headers=None):
         """
         Make a common request for this Test Case. Get a response.
         :return: Response
         """
+        if headers is None:
+            headers = self.headers
+
         with self.app.test_client() as c:
             response = c.post(
                 path=self.url,
                 data=data,
-                content_type='multipart/form-data'
+                content_type='multipart/form-data',
+                environ_base=headers
             )
 
         return response
@@ -97,6 +106,10 @@ class UploadFileCase(unittest.TestCase):
 
         self.assertIsNotNone(uploaded_file_record,
                              "File record does not exist in the table.")
+
+        self.assertEqual(self.headers['sender_address'],
+                         uploaded_file_record.owner,
+                         "Sender address has to be stored into 'owner' field.")
 
         self.assertSetEqual(
             self.files | {tuple(uploaded_file_record)},
