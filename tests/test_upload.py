@@ -35,7 +35,7 @@ class UploadFileCase(unittest.TestCase):
         self.file_data = b'some data'
         valid_hash = sha256(self.file_data).hexdigest()
 
-        valid_signature = btctx_api.sign_unicode(btctx_wif, valid_hash)
+        valid_signature = test_btctx_api.sign_unicode(test_owner_wif, valid_hash)
 
         self.file_saving_path = os.path.join(
             self.app.config['UPLOAD_FOLDER'], valid_hash
@@ -48,11 +48,11 @@ class UploadFileCase(unittest.TestCase):
         }
 
         self.headers = {
-            'sender_address': btctx_address,
+            'sender_address': test_owner_address,
             'signature': valid_signature
         }
 
-        self.patcher = patch('storj.BTCTX_API', btctx_api)
+        self.patcher = patch('storj.BTCTX_API', test_btctx_api)
         self.patcher.start()
 
     def tearDown(self):
@@ -142,8 +142,8 @@ class UploadFileCase(unittest.TestCase):
         Try to upload file with invalid SHA-256 hash.
         """
         self.send_data['data_hash'] = 'invalid hash'
-        self.headers['signature'] = btctx_api.sign_unicode(
-            btctx_wif,
+        self.headers['signature'] = test_btctx_api.sign_unicode(
+            test_owner_wif,
             self.send_data['data_hash']
         )
 
@@ -201,8 +201,8 @@ class UploadFileCase(unittest.TestCase):
         Try to upload file with mismatched SHA-256 hash.
         """
         self.send_data['data_hash'] = sha256(self.file_data + b'_').hexdigest()
-        self.headers['signature'] = btctx_api.sign_unicode(
-            btctx_wif, self.send_data['data_hash']
+        self.headers['signature'] = test_btctx_api.sign_unicode(
+            test_owner_wif, self.send_data['data_hash']
         )
 
         response = self.make_request(self.send_data)

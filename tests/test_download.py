@@ -31,7 +31,7 @@ class DownloadFileCase(unittest.TestCase):
 
         self.file_data = b'existing file data'
         self.valid_hash = sha256(self.file_data).hexdigest()
-        valid_signature = btctx_api.sign_unicode(btctx_wif, self.valid_hash)
+        valid_signature = test_btctx_api.sign_unicode(test_owner_wif, self.valid_hash)
 
         self.file_saving_path = os.path.join(
             self.app.config['UPLOAD_FOLDER'], self.valid_hash
@@ -46,11 +46,11 @@ class DownloadFileCase(unittest.TestCase):
         ).execute().inserted_primary_key
 
         self.headers = {
-            'sender_address': btctx_address,
+            'sender_address': test_owner_address,
             'signature': valid_signature
         }
 
-        self.patcher = patch('storj.BTCTX_API', btctx_api)
+        self.patcher = patch('storj.BTCTX_API', test_btctx_api)
         self.patcher.start()
 
     def tearDown(self):
@@ -132,7 +132,7 @@ class DownloadFileCase(unittest.TestCase):
         Try to download nonexistent file.
         """
         data_hash = sha256(self.file_data + b'_').hexdigest()
-        self.headers['signature'] = btctx_api.sign_unicode(btctx_wif,
+        self.headers['signature'] = test_btctx_api.sign_unicode(test_owner_wif,
                                                            data_hash)
 
         response = self.make_request(data_hash)

@@ -32,7 +32,8 @@ class AuditFileCase(unittest.TestCase):
 
         self.file_data = b'existing file data'
         self.valid_hash = sha256(self.file_data).hexdigest()
-        valid_signature = btctx_api.sign_unicode(btctx_wif, self.valid_hash)
+        valid_signature = test_btctx_api.sign_unicode(test_owner_wif,
+                                                      self.valid_hash)
 
         self.file_saving_path = os.path.join(
             self.app.config['UPLOAD_FOLDER'], self.valid_hash
@@ -41,7 +42,7 @@ class AuditFileCase(unittest.TestCase):
         with open(self.file_saving_path, 'wb') as stored_file:
             stored_file.write(self.file_data)
 
-        self.owner = btctx_address
+        self.owner = test_owner_address
 
         self.files_id = files.insert().values(
             hash=self.valid_hash, role='000', size=len(self.file_data),
@@ -65,12 +66,11 @@ class AuditFileCase(unittest.TestCase):
             'signature': valid_signature
         }
 
-        other_key = btctx_api.create_key()
-        self.other_address = btctx_api.get_address(other_key)
-        self.other_signature = btctx_api.sign_unicode(other_key,
-                                                      self.valid_hash)
+        self.other = test_other_address
+        self.other_signature = test_btctx_api.sign_unicode(test_other_wfi,
+                                                           self.valid_hash)
 
-        self.patcher = patch('storj.BTCTX_API', btctx_api)
+        self.patcher = patch('storj.BTCTX_API', test_btctx_api)
         self.patcher.start()
 
     def tearDown(self):
@@ -126,7 +126,7 @@ class AuditFileCase(unittest.TestCase):
         """
         Audit file b y other with all valid data.
         """
-        self.headers['sender_address'] = self.other_address
+        self.headers['sender_address'] = self.other
         self.headers['signature'] = self.other_signature
 
         response = self.make_request()
@@ -152,8 +152,8 @@ class AuditFileCase(unittest.TestCase):
         """
 
         self.send_data['data_hash'] = 'invalid hash'
-        self.headers['signature'] = btctx_api.sign_unicode(
-            btctx_wif, self.send_data['data_hash']
+        self.headers['signature'] = test_btctx_api.sign_unicode(
+            test_owner_wif, self.send_data['data_hash']
         )
         response = self.make_request()
 
@@ -226,7 +226,7 @@ class AuditFileCase(unittest.TestCase):
         Try to audit file with rate limit exceeded by other user.
         """
 
-        self.headers['sender_address'] = self.other_address
+        self.headers['sender_address'] = self.other
         self.headers['signature'] = self.other_signature
 
         mock_config = copy.deepcopy(self.app.config)
