@@ -6,18 +6,12 @@ from hashlib import sha256
 from io import BytesIO
 from unittest.mock import patch, Mock
 
-from btctxstore import BtcTxStore
-
 import storj
 from database import files
 from error_codes import *
+from tests import *
 
 __author__ = 'karatel'
-
-
-btctx_api = BtcTxStore(testnet=True, dryrun=True)
-btctx_wif = btctx_api.create_key()
-btctx_address = btctx_api.get_address(btctx_wif)
 
 
 class UploadFileCase(unittest.TestCase):
