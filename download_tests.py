@@ -42,6 +42,11 @@ class DownloadFileCase(unittest.TestCase):
             owner='a' * 26
         ).execute().inserted_primary_key
 
+        self.headers = {
+            'sender_address': 'a' * 26,
+            'sender_signature': ''
+        }
+
     def tearDown(self):
         """
         Remove initial files from Upload Dir.
@@ -50,13 +55,19 @@ class DownloadFileCase(unittest.TestCase):
         os.unlink(self.file_saving_path)
         files.delete().where(files.c.hash.in_(self.files_id)).execute()
 
-    def make_request(self, data_hash):
+    def make_request(self, data_hash, headers=None):
         """
         Make a common request for this Test Case. Get a response.
         :return: Response
         """
+        if headers is None:
+            headers = self.headers
+
         with self.app.test_client() as c:
-            response = c.get(path=self.base_url + data_hash)
+            response = c.get(
+                path=self.base_url + data_hash,
+                environ_base=headers
+            )
 
         return response
 

@@ -5,6 +5,7 @@ from datetime import datetime
 from datetime import timedelta
 from hashlib import sha256
 
+from btctxstore import BtcTxStore
 from flask import Flask, jsonify, request, send_from_directory
 from sqlalchemy import and_
 
@@ -13,6 +14,8 @@ from error_codes import *
 
 app = Flask(__name__)
 app.config.from_object('config')
+
+BTCTX_API = BtcTxStore(dryrun=True)
 
 hash_pattern = re.compile(r'^[a-f\d]{64}$')
 
@@ -140,6 +143,17 @@ def upload_file():
         response.status_code = 400
         return response
 
+    sender_address = request.environ['sender_address']
+    signature_is_valid = BTCTX_API.verify_signature_unicode(
+        sender_address,
+        request.environ['signature'],
+        request.form['data_hash']
+    )
+    if not signature_is_valid:
+        response = jsonify(error_code=ERR_TRANSFER['INVALID_SIGNATURE'])
+        response.status_code = 400
+        return response
+
     file_data = request.files['file_data'].stream.read()
     file_size = len(file_data)
 
@@ -177,7 +191,7 @@ def upload_file():
         hash=data_hash,
         role=request.form['file_role'],
         size=len(file_data),
-        owner=request.environ['sender_address']
+        owner=sender_address
     ).execute()
 
     response = jsonify(data_hash=data_hash,

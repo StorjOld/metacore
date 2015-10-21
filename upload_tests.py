@@ -6,11 +6,18 @@ from hashlib import sha256
 from io import BytesIO
 from unittest.mock import patch, Mock
 
+from btctxstore import BtcTxStore
+
 import storj
 from database import files
 from error_codes import *
 
 __author__ = 'karatel'
+
+
+btctx_api = BtcTxStore(testnet=True, dryrun=True)
+btctx_wif = btctx_api.create_key()
+btctx_address = btctx_api.get_address(btctx_wif)
 
 
 class UploadFileCase(unittest.TestCase):
@@ -33,6 +40,9 @@ class UploadFileCase(unittest.TestCase):
 
         self.file_data = b'some data'
         valid_hash = sha256(self.file_data).hexdigest()
+
+        valid_signature = btctx_api.sign_unicode(btctx_wif, valid_hash)
+
         self.file_saving_path = os.path.join(
             self.app.config['UPLOAD_FOLDER'], valid_hash
         )
@@ -44,15 +54,21 @@ class UploadFileCase(unittest.TestCase):
         }
 
         self.headers = {
-            'sender_address': 'a' * 26,
-            'sender_signature': ''
+            'sender_address': btctx_address,
+            'signature': valid_signature
         }
+
+        self.patcher = patch('storj.BTCTX_API', btctx_api)
+        self.patcher.start()
 
     def tearDown(self):
         """
+        Switch off some test configs.
         Remove new records form the 'files' table.
         Remove new files from Upload Dir.
         """
+        self.patcher.stop()
+
         files.delete().where(
             files.c.hash not in (_[0] for _ in self.files)
         ).execute()
@@ -155,11 +171,41 @@ class UploadFileCase(unittest.TestCase):
         self.assertFalse(os.path.exists(self.file_saving_path),
                          "File should not be saved.")
 
+    def test_invalid_signature(self):
+        """
+        Try to upload file with invalid signature.
+        """
+        self.headers['signature'] = self.headers['signature'].swapcase()
+        response = self.make_request(self.send_data)
+
+        self.assertEqual(400, response.status_code,
+                         "Response has to be marked as 'Bad Request'.")
+        self.assertEqual('application/json', response.content_type,
+                         "Has to be a JSON-response.")
+
+        self.assertDictEqual(
+            {'error_code': ERR_TRANSFER['INVALID_SIGNATURE']},
+            json.loads(response.data.decode()),
+            "Unexpected response data."
+        )
+
+        self.assertSetEqual(
+            self.files,
+            set(tuple(_) for _ in files.select().execute()),
+            "Database has to be unchanged."
+        )
+
+        self.assertFalse(os.path.exists(self.file_saving_path),
+                         "File should not be saved.")
+
     def test_mismatched_hash(self):
         """
         Try to upload file with mismatched SHA-256 hash.
         """
         self.send_data['data_hash'] = sha256(self.file_data + b'_').hexdigest()
+        self.headers['signature'] = btctx_api.sign_unicode(
+            btctx_wif, self.send_data['data_hash']
+        )
 
         response = self.make_request(self.send_data)
 
@@ -188,16 +234,9 @@ class UploadFileCase(unittest.TestCase):
         Try to upload too big file.
         """
         mock_config = copy.deepcopy(self.app.config)
-        mock_config['MAX_FILE_SIZE'] = 128
+        mock_config['MAX_FILE_SIZE'] = len(self.file_data) - 1
 
         with patch('storj.app.config', mock_config):
-
-            big_file_data = b'0' * (self.app.config['MAX_FILE_SIZE'] + 1)
-            self.send_data.update({
-                'data_hash': sha256(big_file_data).hexdigest(),
-                'file_data': (BytesIO(big_file_data), 'test_file'),
-            })
-
             response = self.make_request(self.send_data)
 
         self.assertEqual(400, response.status_code,
