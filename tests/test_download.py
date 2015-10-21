@@ -65,16 +65,22 @@ class DownloadFileCase(unittest.TestCase):
         os.unlink(self.file_saving_path)
         files.delete().where(files.c.hash.in_(self.files_id)).execute()
 
-    def make_request(self):
+    def make_request(self, is_owner=True):
         """
         Make a common request for this Test Case. Get a response.
         :return: Response
         """
 
+        headers = self.headers if is_owner else {
+            'sender_address': test_other_address,
+            'signature': test_btctx_api.sign_unicode(test_other_wfi,
+                                                     self.data_hash)
+        }
+
         with self.app.test_client() as c:
             response = c.get(
                 path=self.base_url + self.data_hash,
-                environ_base=self.headers
+                environ_base=headers
             )
 
         return response
@@ -98,7 +104,9 @@ class DownloadFileCase(unittest.TestCase):
         """
         Try to download file with invalid hash.
         """
-        self.headers['signature'] = self.headers['signature'].swapcase()
+        self.data_hash = 'invalid hash'
+        self.headers['signature'] = test_btctx_api.sign_unicode(test_owner_wif,
+                                                                self.data_hash)
         response = self.make_request()
 
         self.assertEqual(400, response.status_code,
@@ -106,7 +114,7 @@ class DownloadFileCase(unittest.TestCase):
         self.assertEqual('application/json', response.content_type,
                          "Has to be a JSON.")
 
-        self.assertDictEqual({'error_code': ERR_TRANSFER['INVALID_SIGNATURE']},
+        self.assertDictEqual({'error_code': ERR_TRANSFER['INVALID_HASH']},
                              json.loads(response.data.decode()),
                              "Unexpected response data.")
 
@@ -114,7 +122,7 @@ class DownloadFileCase(unittest.TestCase):
         """
         Try to download file with invalid signature.
         """
-        self.data_hash = 'invalid hash'
+        self.headers['signature'] = self.headers['signature'].swapcase()
         response = self.make_request()
 
         self.assertEqual(400, response.status_code,
