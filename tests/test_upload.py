@@ -142,6 +142,10 @@ class UploadFileCase(unittest.TestCase):
         Try to upload file with invalid SHA-256 hash.
         """
         self.send_data['data_hash'] = 'invalid hash'
+        self.headers['signature'] = btctx_api.sign_unicode(
+            btctx_wif,
+            self.send_data['data_hash']
+        )
 
         response = self.make_request(self.send_data)
 
