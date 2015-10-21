@@ -4,9 +4,11 @@ import re
 from datetime import datetime
 from datetime import timedelta
 from hashlib import sha256
+from urllib.parse import unquote_to_bytes
 
 from btctxstore import BtcTxStore
-from flask import Flask, jsonify, request, send_from_directory
+from file_encryptor import convergence
+from flask import Flask, jsonify, request, send_from_directory, Response
 from sqlalchemy import and_
 
 from database import audit, files
@@ -135,6 +137,24 @@ def download_file(data_hash):
         response = jsonify(error_code=ERR_TRANSFER['LIMIT_REACHED'])
         response.status_code = 400
         return response
+
+    decryption_key = request.values.get('decryption_key')
+    if decryption_key:
+        if file.role[2] == '1':
+            response = Response(
+                convergence.decrypt_generator(
+                    os.path.join(app.config['UPLOAD_FOLDER'], data_hash),
+                    unquote_to_bytes(decryption_key)
+                ),
+                200,
+                {'X-Sendfile': request.values.get('file_alias', data_hash),
+                 'Content-Type': 'application/octet-stream'}
+            )
+            return response
+        else:
+            response = jsonify(error_code=ERR_TRANSFER['NOT_FOUND'])
+            response.status_code = 400
+            return response
 
     return send_from_directory(app.config['UPLOAD_FOLDER'], data_hash)
 
