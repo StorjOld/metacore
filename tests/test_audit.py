@@ -52,6 +52,16 @@ class AuditFileCase(unittest.TestCase):
             self.file_data + self.challenge_seed.encode()
         ).hexdigest()
 
+        self.send_data = {
+            'data_hash': self.valid_hash,
+            'challenge_seed': self.challenge_seed
+        }
+
+        self.headers = {
+            'sender_address': self.owner,
+            'signature': ''
+        }
+
     def tearDown(self):
         """
         Remove initial files from Upload Dir.
@@ -61,16 +71,17 @@ class AuditFileCase(unittest.TestCase):
         files.delete().where(files.c.hash.in_(self.files_id)).execute()
         audit.delete().execute()
 
-    def make_request(self, data, headers=None):
+    def make_request(self):
         """
         Make a common request for this Test Case. Get a response.
         :return: Response
         """
+
         with self.app.test_client() as c:
             response = c.post(
                 path=self.url,
-                data=data,
-                environ_base=headers
+                data=self.send_data,
+                environ_base=self.headers
             )
 
         return response
@@ -79,17 +90,8 @@ class AuditFileCase(unittest.TestCase):
         """
         Audit file with all valid data.
         """
-        send_data = {
-            'data_hash': self.valid_hash,
-            'challenge_seed': self.challenge_seed
-        }
 
-        headers = {
-            'sender_address': self.owner,
-            'signature': ''
-        }
-
-        response = self.make_request(send_data, headers)
+        response = self.make_request()
 
         self.assertEqual(201, response.status_code,
                          "'Created' status code is expected.")
@@ -98,8 +100,8 @@ class AuditFileCase(unittest.TestCase):
 
         self.assertDictEqual(
             {
-                'data_hash': send_data['data_hash'],
-                'challenge_seed': send_data['challenge_seed'],
+                'data_hash': self.send_data['data_hash'],
+                'challenge_seed': self.send_data['challenge_seed'],
                 'challenge_response': self.challenge_response
             },
             json.loads(response.data.decode()),
@@ -111,17 +113,8 @@ class AuditFileCase(unittest.TestCase):
         Try to audit file with invalid hash.
         """
 
-        send_data = {
-            'data_hash': 'invalid hash',
-            'challenge_seed': self.challenge_seed
-        }
-
-        headers = {
-            'sender_address': self.owner,
-            'signature': ''
-        }
-
-        response = self.make_request(send_data, headers)
+        self.send_data['data_hash'] = 'invalid hash'
+        response = self.make_request()
 
         self.assertEqual(400, response.status_code,
                          "'Bad Request' status code is expected.")
@@ -137,12 +130,8 @@ class AuditFileCase(unittest.TestCase):
         Try to audit file with invalid challenge seed.
         """
 
-        send_data = {
-            'data_hash': self.valid_hash,
-            'challenge_seed': 'invalid seed'
-        }
-
-        response = self.make_request(send_data)
+        self.send_data['challenge_seed'] = 'invalid seed'
+        response = self.make_request()
 
         self.assertEqual(400, response.status_code,
                          "'Bad Request' status code is expected.")
@@ -157,24 +146,13 @@ class AuditFileCase(unittest.TestCase):
         """
         Try to audit file with rate limit exceeded by owner.
         """
-
-        send_data = {
-            'data_hash': self.valid_hash,
-            'challenge_seed': self.challenge_seed
-        }
-
-        headers = {
-            'sender_address': self.owner,
-            'signature': ''
-        }
-
         mock_config = copy.deepcopy(self.app.config)
         mock_config['AUDIT_RATE_LIMITS']['owner'] = 2
 
         with patch('storj.app.config', mock_config):
             for i in range(self.app.config['AUDIT_RATE_LIMITS']['owner']):
-                self.make_request(send_data, headers)
-            response = self.make_request(send_data, headers)
+                self.make_request()
+            response = self.make_request()
 
         self.assertEqual(400, response.status_code,
                          "'Bad Request' status code is expected.")
@@ -190,23 +168,16 @@ class AuditFileCase(unittest.TestCase):
         Try to audit file with rate limit exceeded by other user.
         """
 
-        send_data = {
-            'data_hash': self.valid_hash,
-            'challenge_seed': self.challenge_seed
-        }
-
-        headers = {
-            'sender_address': self.owner + '_',
-            'signature': ''
-        }
+        self.headers['sender_address'] = \
+            self.headers['sender_address'].swapcase()
 
         mock_config = copy.deepcopy(self.app.config)
         mock_config['AUDIT_RATE_LIMITS']['other'] = 2
 
         with patch('storj.app.config', mock_config):
             for i in range(self.app.config['AUDIT_RATE_LIMITS']['other']):
-                self.make_request(send_data, headers)
-            response = self.make_request(send_data, headers)
+                self.make_request()
+            response = self.make_request()
 
         self.assertEqual(400, response.status_code,
                          "'Bad Request' status code is expected.")
