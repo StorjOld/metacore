@@ -88,6 +88,17 @@ def download_file(data_hash):
     """
     node = app.config['NODE']
 
+    sender_address = request.environ['sender_address']
+    signature_is_valid = BTCTX_API.verify_signature_unicode(
+        sender_address,
+        request.environ['signature'],
+        data_hash
+    )
+    if not signature_is_valid:
+        response = jsonify(error_code=ERR_TRANSFER['INVALID_SIGNATURE'])
+        response.status_code = 400
+        return response
+
     if not hash_pattern.match(data_hash):
         response = jsonify(error_code=ERR_TRANSFER['INVALID_HASH'])
         response.status_code = 400

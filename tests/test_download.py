@@ -8,6 +8,7 @@ from unittest.mock import patch
 import storj
 from database import files
 from error_codes import *
+from tests import *
 
 __author__ = 'karatel'
 
@@ -30,6 +31,8 @@ class DownloadFileCase(unittest.TestCase):
 
         self.file_data = b'existing file data'
         self.valid_hash = sha256(self.file_data).hexdigest()
+        valid_signature = btctx_api.sign_unicode(btctx_wif, self.valid_hash)
+
         self.file_saving_path = os.path.join(
             self.app.config['UPLOAD_FOLDER'], self.valid_hash
         )
@@ -43,15 +46,21 @@ class DownloadFileCase(unittest.TestCase):
         ).execute().inserted_primary_key
 
         self.headers = {
-            'sender_address': 'a' * 26,
-            'sender_signature': ''
+            'sender_address': btctx_address,
+            'signature': valid_signature
         }
+
+        self.patcher = patch('storj.BTCTX_API', btctx_api)
+        self.patcher.start()
 
     def tearDown(self):
         """
+        Switch off some test configs.
         Remove initial files from Upload Dir.
         Remove initial records form the 'files' table.
         """
+        self.patcher.stop()
+
         os.unlink(self.file_saving_path)
         files.delete().where(files.c.hash.in_(self.files_id)).execute()
 
@@ -90,6 +99,22 @@ class DownloadFileCase(unittest.TestCase):
         """
         Try to download file with invalid hash.
         """
+        self.headers['signature'] = self.headers['signature'].swapcase()
+        response = self.make_request(self.valid_hash)
+
+        self.assertEqual(400, response.status_code,
+                         "'Bad Request' status code is expected.")
+        self.assertEqual('application/json', response.content_type,
+                         "Has to be a JSON.")
+
+        self.assertDictEqual({'error_code': ERR_TRANSFER['INVALID_SIGNATURE']},
+                             json.loads(response.data.decode()),
+                             "Unexpected response data.")
+
+    def test_invalid_signature(self):
+        """
+        Try to download file with invalid signature.
+        """
 
         response = self.make_request('invalid hash')
 
@@ -98,7 +123,7 @@ class DownloadFileCase(unittest.TestCase):
         self.assertEqual('application/json', response.content_type,
                          "Has to be a JSON.")
 
-        self.assertDictEqual({'error_code': ERR_TRANSFER['INVALID_HASH']},
+        self.assertDictEqual({'error_code': ERR_TRANSFER['INVALID_SIGNATURE']},
                              json.loads(response.data.decode()),
                              "Unexpected response data.")
 
@@ -106,8 +131,11 @@ class DownloadFileCase(unittest.TestCase):
         """
         Try to download nonexistent file.
         """
+        data_hash = sha256(self.file_data + b'_').hexdigest()
+        self.headers['signature'] = btctx_api.sign_unicode(btctx_wif,
+                                                           data_hash)
 
-        response = self.make_request(sha256(self.file_data + b'_').hexdigest())
+        response = self.make_request(data_hash)
 
         self.assertEqual(400, response.status_code,
                          "'Bad Request' status code is expected.")
