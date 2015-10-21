@@ -162,7 +162,13 @@ def download_file(data_hash):
             response.status_code = 404
             return response
 
-    return send_from_directory(app.config['UPLOAD_FOLDER'], data_hash)
+    if os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], data_hash)):
+        return send_from_directory(app.config['UPLOAD_FOLDER'], data_hash)
+    else:
+        with open(app.config['PEERS_FILE']) as fp:
+            response = jsonify(peers=[_.strip() for _ in fp])
+        response.status_code = 404
+        return response
 
 
 @app.route('/api/files/', methods=['GET'])

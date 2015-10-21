@@ -20,3 +20,4 @@ AUDIT_RATE_LIMITS = {
     'other': 50
 }
 BLACKLIST_FILE = os.path.join(BASEDIR, 'Blacklist.txt')
+PEERS_FILE = os.path.join(BASEDIR, 'peers.txt')

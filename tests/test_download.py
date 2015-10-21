@@ -74,7 +74,11 @@ class DownloadFileCase(unittest.TestCase):
         """
         self.patcher.stop()
 
-        os.unlink(self.file_saving_path)
+        try:
+            os.unlink(self.file_saving_path)
+        except FileNotFoundError:
+            pass
+
         files.delete().where(files.c.hash.in_(self.files_id)).execute()
 
         with open(self.app.config['BLACKLIST_FILE'], 'w') as fp:
@@ -231,6 +235,26 @@ class DownloadFileCase(unittest.TestCase):
                          "Has to be a JSON.")
 
         self.assertDictEqual({'error_code': ERR_TRANSFER['NOT_FOUND']},
+                             json.loads(response.data.decode()),
+                             "Unexpected response data.")
+
+    def test_lost_file(self):
+        """
+        Try to download lost file.
+        """
+        os.unlink(self.file_saving_path)
+
+        response = self.make_request()
+
+        self.assertEqual(404, response.status_code,
+                         "'Not Found' status code is expected.")
+        self.assertEqual('application/json', response.content_type,
+                         "Has to be a JSON.")
+
+        with open(self.app.config['PEERS_FILE']) as fp:
+            peers = [_.strip() for _ in fp]
+
+        self.assertDictEqual({'peers': peers},
                              json.loads(response.data.decode()),
                              "Unexpected response data.")
 
