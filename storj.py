@@ -35,7 +35,7 @@ def audit_file():
         request.form['data_hash']
     )
     if not signature_is_valid:
-        response = jsonify(error_code=ERR_TRANSFER['INVALID_SIGNATURE'])
+        response = jsonify(error_code=ERR_AUDIT['INVALID_SIGNATURE'])
         response.status_code = 400
         return response
 
@@ -52,7 +52,14 @@ def audit_file():
         return response
 
     sender = request.environ['sender_address']
+
     file = files.select(files.c.hash == data_hash).execute().first()
+
+    if not file or file.role[1] != '0' and file.owner != sender_address:
+        response = jsonify(error_code=ERR_AUDIT['INVALID_HASH'])
+        response.status_code = 400
+        return response
+
     is_owner = sender == file.owner
 
     current_attempts = audit.select(

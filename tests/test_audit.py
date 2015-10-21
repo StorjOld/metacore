@@ -105,9 +105,9 @@ class AuditFileCase(unittest.TestCase):
 
         return response
 
-    def test_success_audit_by_owner(self):
+    def test_success_audit_public_by_owner(self):
         """
-        Audit file b y owner with all valid data.
+        Audit public file by owner with all valid data.
         """
 
         response = self.make_request()
@@ -127,9 +127,9 @@ class AuditFileCase(unittest.TestCase):
             "Unexpected response data."
         )
 
-    def test_success_audit_by_other(self):
+    def test_success_audit_public_by_other(self):
         """
-        Audit file b y other with all valid data.
+        Audit public file by other with all valid data.
         """
         response = self.make_request(False)
 
@@ -147,6 +147,50 @@ class AuditFileCase(unittest.TestCase):
             json.loads(response.data.decode()),
             "Unexpected response data."
         )
+
+    def test_success_audit_private_by_owner(self):
+        """
+        Audit private file by owner with all valid data.
+        """
+        files.update().where(
+            files.c.hash == self.data_hash
+        ).values(role='020').execute()
+
+        response = self.make_request()
+
+        self.assertEqual(201, response.status_code,
+                         "'Created' status code is expected.")
+        self.assertEqual('application/json', response.content_type,
+                         "Has to be a JSON-response.")
+
+        self.assertDictEqual(
+            {
+                'data_hash': self.send_data['data_hash'],
+                'challenge_seed': self.send_data['challenge_seed'],
+                'challenge_response': self.challenge_response
+            },
+            json.loads(response.data.decode()),
+            "Unexpected response data."
+        )
+
+    def test_private_by_other(self):
+        """
+        Try to audit private file by other.
+        """
+        files.update().where(
+            files.c.hash == self.data_hash
+        ).values(role='020').execute()
+
+        response = self.make_request(False)
+
+        self.assertEqual(400, response.status_code,
+                         "'Bad Request' status code is expected.")
+        self.assertEqual('application/json', response.content_type,
+                         "Has to be a JSON.")
+
+        self.assertDictEqual({'error_code': ERR_AUDIT['INVALID_HASH']},
+                             json.loads(response.data.decode()),
+                             "Unexpected response data.")
 
     def test_invalid_hash(self):
         """
@@ -182,6 +226,26 @@ class AuditFileCase(unittest.TestCase):
                          "Has to be a JSON.")
 
         self.assertDictEqual({'error_code': ERR_AUDIT['INVALID_SIGNATURE']},
+                             json.loads(response.data.decode()),
+                             "Unexpected response data.")
+
+    def test_nonexistent_file(self):
+        """
+        Try to audit nonexistent file.
+        """
+        self.send_data['data_hash'] = sha256(self.file_data + b'_').hexdigest()
+        self.headers['signature'] = test_btctx_api.sign_unicode(
+            test_owner_wif, self.send_data['data_hash']
+        )
+
+        response = self.make_request()
+
+        self.assertEqual(400, response.status_code,
+                         "'Bad Request' status code is expected.")
+        self.assertEqual('application/json', response.content_type,
+                         "Has to be a JSON.")
+
+        self.assertDictEqual({'error_code': ERR_AUDIT['INVALID_HASH']},
                              json.loads(response.data.decode()),
                              "Unexpected response data.")
 
