@@ -31,12 +31,12 @@ class AuditFileCase(unittest.TestCase):
         self.app.config['TESTING'] = True
 
         self.file_data = b'existing file data'
-        self.valid_hash = sha256(self.file_data).hexdigest()
+        self.data_hash = sha256(self.file_data).hexdigest()
         valid_signature = test_btctx_api.sign_unicode(test_owner_wif,
-                                                      self.valid_hash)
+                                                      self.data_hash)
 
         self.file_saving_path = os.path.join(
-            self.app.config['UPLOAD_FOLDER'], self.valid_hash
+            self.app.config['UPLOAD_FOLDER'], self.data_hash
         )
 
         with open(self.file_saving_path, 'wb') as stored_file:
@@ -45,7 +45,7 @@ class AuditFileCase(unittest.TestCase):
         self.owner = test_owner_address
 
         self.files_id = files.insert().values(
-            hash=self.valid_hash, role='000', size=len(self.file_data),
+            hash=self.data_hash, role='000', size=len(self.file_data),
             owner=self.owner
         ).execute().inserted_primary_key
 
@@ -57,7 +57,7 @@ class AuditFileCase(unittest.TestCase):
         ).hexdigest()
 
         self.send_data = {
-            'data_hash': self.valid_hash,
+            'data_hash': self.data_hash,
             'challenge_seed': self.challenge_seed
         }
 
@@ -68,7 +68,7 @@ class AuditFileCase(unittest.TestCase):
 
         self.other = test_other_address
         self.other_signature = test_btctx_api.sign_unicode(test_other_wfi,
-                                                           self.valid_hash)
+                                                           self.data_hash)
 
         self.patcher = patch('storj.BTCTX_API', test_btctx_api)
         self.patcher.start()
@@ -85,17 +85,22 @@ class AuditFileCase(unittest.TestCase):
         files.delete().where(files.c.hash.in_(self.files_id)).execute()
         audit.delete().execute()
 
-    def make_request(self):
+    def make_request(self, is_owner=True):
         """
         Make a common request for this Test Case. Get a response.
         :return: Response
         """
+        headers = self.headers if is_owner else {
+            'sender_address': test_other_address,
+            'signature': test_btctx_api.sign_unicode(test_other_wfi,
+                                                     self.data_hash)
+        }
 
         with self.app.test_client() as c:
             response = c.post(
                 path=self.url,
                 data=self.send_data,
-                environ_base=self.headers
+                environ_base=headers
             )
 
         return response
@@ -126,10 +131,7 @@ class AuditFileCase(unittest.TestCase):
         """
         Audit file b y other with all valid data.
         """
-        self.headers['sender_address'] = self.other
-        self.headers['signature'] = self.other_signature
-
-        response = self.make_request()
+        response = self.make_request(False)
 
         self.assertEqual(201, response.status_code,
                          "'Created' status code is expected.")
@@ -225,17 +227,13 @@ class AuditFileCase(unittest.TestCase):
         """
         Try to audit file with rate limit exceeded by other user.
         """
-
-        self.headers['sender_address'] = self.other
-        self.headers['signature'] = self.other_signature
-
         mock_config = copy.deepcopy(self.app.config)
         mock_config['AUDIT_RATE_LIMITS']['other'] = 2
 
         with patch('storj.app.config', mock_config):
             for i in range(self.app.config['AUDIT_RATE_LIMITS']['other']):
-                self.make_request()
-            response = self.make_request()
+                self.make_request(False)
+            response = self.make_request(False)
 
         self.assertEqual(400, response.status_code,
                          "'Bad Request' status code is expected.")
