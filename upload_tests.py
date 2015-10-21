@@ -32,10 +32,16 @@ class UploadFileCase(unittest.TestCase):
         self.stored_files = set(os.listdir(self.app.config['UPLOAD_FOLDER']))
 
         self.file_data = b'some data'
-        self.valid_hash = sha256(self.file_data).hexdigest()
+        valid_hash = sha256(self.file_data).hexdigest()
         self.file_saving_path = os.path.join(
-            self.app.config['UPLOAD_FOLDER'], self.valid_hash
+            self.app.config['UPLOAD_FOLDER'], valid_hash
         )
+
+        self.send_data = {
+            'data_hash': valid_hash,
+            'file_data': (BytesIO(self.file_data), 'test_file'),
+            'file_role': '000'
+        }
 
     def tearDown(self):
         """
@@ -71,13 +77,7 @@ class UploadFileCase(unittest.TestCase):
         """
         Upload file with all valid data.
         """
-        send_data = {
-            'data_hash': self.valid_hash,
-            'file_data': (BytesIO(self.file_data), 'test_file'),
-            'file_role': '000'
-        }
-
-        response = self.make_request(send_data)
+        response = self.make_request(self.send_data)
 
         self.assertEqual(201, response.status_code,
                          "'Created' status code is expected.")
@@ -85,14 +85,14 @@ class UploadFileCase(unittest.TestCase):
                          "Has to be a JSON-response.")
 
         self.assertDictEqual(
-            {'data_hash': send_data['data_hash'],
-             'file_role': send_data['file_role']},
+            {'data_hash': self.send_data['data_hash'],
+             'file_role': self.send_data['file_role']},
             json.loads(response.data.decode()),
             "Unexpected response data."
         )
 
         uploaded_file_record = files.select(
-            files.c.hash == send_data['data_hash']
+            files.c.hash == self.send_data['data_hash']
         ).execute().first()
 
         self.assertIsNotNone(uploaded_file_record,
@@ -118,13 +118,9 @@ class UploadFileCase(unittest.TestCase):
         """
         Try to upload file with invalid SHA-256 hash.
         """
-        send_data = {
-            'data_hash': 'invalid hash',
-            'file_data': (BytesIO(self.file_data), 'test_file'),
-            'file_role': '000'
-        }
+        self.send_data['data_hash'] = 'invalid hash'
 
-        response = self.make_request(send_data)
+        response = self.make_request(self.send_data)
 
         self.assertEqual(400, response.status_code,
                          "Response has to be marked as 'Bad Request'.")
@@ -150,13 +146,9 @@ class UploadFileCase(unittest.TestCase):
         """
         Try to upload file with mismatched SHA-256 hash.
         """
-        send_data = {
-            'data_hash': sha256(self.file_data + b'_').hexdigest(),
-            'file_data': (BytesIO(self.file_data), 'test_file'),
-            'file_role': '000',
-        }
+        self.send_data['data_hash'] = sha256(self.file_data + b'_').hexdigest()
 
-        response = self.make_request(send_data)
+        response = self.make_request(self.send_data)
 
         self.assertEqual(400, response.status_code,
                          "Response has to be marked as 'Bad Request'.")
@@ -188,13 +180,12 @@ class UploadFileCase(unittest.TestCase):
         with patch('storj.app.config', mock_config):
 
             big_file_data = b'0' * (self.app.config['MAX_FILE_SIZE'] + 1)
-            send_data = {
+            self.send_data.update({
                 'data_hash': sha256(big_file_data).hexdigest(),
                 'file_data': (BytesIO(big_file_data), 'test_file'),
-                'file_role': '000'
-            }
+            })
 
-            response = self.make_request(send_data)
+            response = self.make_request(self.send_data)
 
         self.assertEqual(400, response.status_code,
                          "Response has to be marked as 'Bad Request'.")
@@ -224,14 +215,7 @@ class UploadFileCase(unittest.TestCase):
         mock_config['NODE'] = Mock(capacity=1)
 
         with patch('storj.app.config', mock_config):
-
-            send_data = {
-                'data_hash': self.valid_hash,
-                'file_data': (BytesIO(self.file_data), 'test_file'),
-                'file_role': '000'
-            }
-
-            response = self.make_request(send_data)
+            response = self.make_request(self.send_data)
 
         self.assertEqual(400, response.status_code,
                          "Response has to be marked as 'Bad Request'.")
@@ -261,14 +245,7 @@ class UploadFileCase(unittest.TestCase):
         mock_config['NODE'].set_limits(incoming=1)
 
         with patch('storj.app.config', mock_config):
-
-            send_data = {
-                'data_hash': self.valid_hash,
-                'file_data': (BytesIO(self.file_data), 'test_file'),
-                'file_role': '000'
-            }
-
-            response = self.make_request(send_data)
+            response = self.make_request(self.send_data)
 
         self.assertEqual(400, response.status_code,
                          "Response has to be marked as 'Bad Request'.")
