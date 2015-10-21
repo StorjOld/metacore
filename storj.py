@@ -56,7 +56,7 @@ def audit_file():
     file = files.select(files.c.hash == data_hash).execute().first()
 
     if not file or file.role[1] != '0' and file.owner != sender_address:
-        response = jsonify(error_code=ERR_AUDIT['INVALID_HASH'])
+        response = jsonify(error_code=ERR_AUDIT['NOT_FOUND'])
         response.status_code = 400
         return response
 

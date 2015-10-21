@@ -188,7 +188,7 @@ class AuditFileCase(unittest.TestCase):
         self.assertEqual('application/json', response.content_type,
                          "Has to be a JSON.")
 
-        self.assertDictEqual({'error_code': ERR_AUDIT['INVALID_HASH']},
+        self.assertDictEqual({'error_code': ERR_AUDIT['NOT_FOUND']},
                              json.loads(response.data.decode()),
                              "Unexpected response data.")
 
@@ -245,7 +245,7 @@ class AuditFileCase(unittest.TestCase):
         self.assertEqual('application/json', response.content_type,
                          "Has to be a JSON.")
 
-        self.assertDictEqual({'error_code': ERR_AUDIT['INVALID_HASH']},
+        self.assertDictEqual({'error_code': ERR_AUDIT['NOT_FOUND']},
                              json.loads(response.data.decode()),
                              "Unexpected response data.")
 
