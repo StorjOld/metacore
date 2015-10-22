@@ -8,7 +8,8 @@ from urllib.parse import unquote_to_bytes
 
 from btctxstore import BtcTxStore
 from file_encryptor import convergence
-from flask import Flask, jsonify, request, send_from_directory, Response
+from flask import Flask, jsonify, request, send_from_directory, Response, \
+    render_template
 from sqlalchemy import and_
 
 from database import audit, files
@@ -107,6 +108,14 @@ class Checker:
             response = jsonify(error_code=ERR_AUDIT['NOT_FOUND'])
             response.status_code = 404
             return response
+
+
+@app.route('/')
+def index():
+    """
+    Index page.
+    """
+    return render_template('index.html')
 
 
 @app.route('/api/audit/', methods=['POST'])
