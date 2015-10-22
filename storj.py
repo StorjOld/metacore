@@ -22,6 +22,93 @@ BTCTX_API = BtcTxStore(dryrun=True)
 hash_pattern = re.compile(r'^[a-f\d]{64}$')
 
 
+class Checker:
+    """
+    Aggregator for common data and params checks.
+    """
+
+    def __init__(self, data_hash):
+        self.data_hash = data_hash
+        self.sender_address = request.environ['sender_address']
+
+        self._checks = {
+            'blacklist': self._check_blacklist,
+            'file': self._get_file_from_hash,
+            'hash': self._check_hash,
+            'signature': self._check_signature
+        }
+
+    def check_all(self, *check_list):
+        """
+        Do all selected checks in selected order.
+        :return: the first failed check result or None
+            if all ones are successful
+        :rtype: Response or NoneType
+        """
+        try:
+            return next(filter(None, [self._checks[check_item]()
+                                      for check_item in check_list]))
+        except StopIteration:
+            return None
+
+    def _check_blacklist(self):
+        """
+        Check if data_hash is in Blacklist.
+        :return: 'OK' HTTP Response with nothing or None if hash
+            is not in list.
+        :rtype: Response or NoneType
+        """
+        with open(app.config['BLACKLIST_FILE']) as fp:
+            if self.data_hash in fp.readlines():
+                return Response()
+
+    def _check_hash(self):
+        """
+        Check if data_hash is a valid SHA-256 hash.
+        :return: 'Bad Request' HTTP Response or None if hash is valid.
+        :rtype: Response or NoneType
+        """
+        if not hash_pattern.match(self.data_hash):
+            response = jsonify(error_code=ERR_AUDIT['INVALID_HASH'])
+            response.status_code = 400
+            return response
+
+    def _check_signature(self):
+        """
+        Check if signature header match with data_hash parameter in request.
+        :return: 'Bad Request' HTTP Response or None if signature is valid.
+        :rtype: Response or NoneType
+        """
+        signature_is_valid = BTCTX_API.verify_signature_unicode(
+            request.environ['sender_address'],
+            request.environ['signature'],
+            self.data_hash
+        )
+        if not signature_is_valid:
+            response = jsonify(error_code=ERR_AUDIT['INVALID_SIGNATURE'])
+            response.status_code = 400
+            return response
+
+    def _get_file_from_hash(self):
+        """
+        Check if file record with data_hash exists in the `files` table
+            and allowed for getting and then store it as self.file.
+        :return: 'Not Found' HTTP Response with nothing or None.
+        :rtype: Response or RowProxy
+        """
+        self.file = files.select(
+            files.c.hash == self.data_hash
+        ).execute().first()
+
+        if not self.file or (
+                        self.file.role[1] != '0' and
+                        self.file.owner != request.environ['sender_address']
+        ):
+            response = jsonify(error_code=ERR_AUDIT['NOT_FOUND'])
+            response.status_code = 404
+            return response
+
+
 @app.route('/api/audit/', methods=['POST'])
 def audit_file():
     """
@@ -30,40 +117,23 @@ def audit_file():
     """
     data_hash = request.form['data_hash']
 
-    sender_address = request.environ['sender_address']
-    signature_is_valid = BTCTX_API.verify_signature_unicode(
-        sender_address,
-        request.environ['signature'],
-        request.form['data_hash']
-    )
-    if not signature_is_valid:
-        response = jsonify(error_code=ERR_AUDIT['INVALID_SIGNATURE'])
-        response.status_code = 400
-        return response
-
-    if not hash_pattern.match(data_hash):
-        response = jsonify(error_code=ERR_AUDIT['INVALID_HASH'])
-        response.status_code = 400
-        return response
-
-    with open(app.config['BLACKLIST_FILE']) as fp:
-        if data_hash in fp.readlines():
-            return Response()
+    checker = Checker(data_hash)
+    checks_result = checker.check_all('signature', 'hash', 'blacklist')
+    if checks_result:
+        return checks_result
 
     challenge_seed = request.form['challenge_seed']
-
     if not hash_pattern.match(challenge_seed):
         response = jsonify(error_code=ERR_AUDIT['INVALID_SEED'])
         response.status_code = 400
         return response
 
-    file = files.select(files.c.hash == data_hash).execute().first()
+    file_check_result = checker.check_all('file')
+    if file_check_result:
+        return file_check_result
 
-    if not file or file.role[1] != '0' and file.owner != sender_address:
-        response = jsonify(error_code=ERR_AUDIT['NOT_FOUND'])
-        response.status_code = 404
-        return response
-
+    file = checker.file
+    sender_address = checker.sender_address
     is_owner = sender_address == file.owner
 
     current_attempts = audit.select(
@@ -75,7 +145,6 @@ def audit_file():
     ).count().scalar()
 
     limits_section = 'owner' if is_owner else 'other'
-
     if current_attempts >= app.config['AUDIT_RATE_LIMITS'][limits_section]:
         response = jsonify(error_code=ERR_AUDIT['LIMIT_REACHED'])
         response.status_code = 400
@@ -83,12 +152,9 @@ def audit_file():
 
     audit.insert().values(file_hash=data_hash, is_owners=is_owner).execute()
 
-    with open(
-            os.path.join(app.config['UPLOAD_FOLDER'], data_hash),
-            'rb'
-    ) as f:
+    with open(os.path.join(app.config['UPLOAD_FOLDER'], data_hash),
+              'rb') as f:
         file_data = f.read()
-
     challenge_response = sha256(file_data +
                                 challenge_seed.encode()).hexdigest()
 
@@ -98,7 +164,6 @@ def audit_file():
         challenge_response=challenge_response
     )
     response.status_code = 201
-
     return response
 
 
@@ -110,33 +175,12 @@ def download_file(data_hash):
     """
     node = app.config['NODE']
 
-    sender_address = request.environ['sender_address']
-    signature_is_valid = BTCTX_API.verify_signature_unicode(
-        sender_address,
-        request.environ['signature'],
-        data_hash
-    )
-    if not signature_is_valid:
-        response = jsonify(error_code=ERR_TRANSFER['INVALID_SIGNATURE'])
-        response.status_code = 400
-        return response
+    checker = Checker(data_hash)
+    checks_result = checker.check_all('signature', 'hash', 'blacklist', 'file')
+    if checks_result:
+        return checks_result
 
-    if not hash_pattern.match(data_hash):
-        response = jsonify(error_code=ERR_TRANSFER['INVALID_HASH'])
-        response.status_code = 400
-        return response
-
-    with open(app.config['BLACKLIST_FILE']) as fp:
-        if data_hash in fp.readlines():
-            return Response()
-
-    file = files.select(files.c.hash == data_hash).execute().first()
-
-    if not file or file.role[1] != '0' and file.owner != sender_address:
-        response = jsonify(error_code=ERR_TRANSFER['NOT_FOUND'])
-        response.status_code = 404
-        return response
-
+    file = checker.file
     if node.limits['outgoing'] is not None and (
                 file.size > node.limits['outgoing'] - node.current['outgoing']
     ):
@@ -202,25 +246,10 @@ def upload_file():
     """
     node = app.config['NODE']
 
-    sender_address = request.environ['sender_address']
-    signature_is_valid = BTCTX_API.verify_signature_unicode(
-        sender_address,
-        request.environ['signature'],
-        request.form['data_hash']
-    )
-    if not signature_is_valid:
-        response = jsonify(error_code=ERR_TRANSFER['INVALID_SIGNATURE'])
-        response.status_code = 400
-        return response
-
-    if not hash_pattern.match(request.form['data_hash']):
-        response = jsonify(error_code=ERR_TRANSFER['INVALID_HASH'])
-        response.status_code = 400
-        return response
-
-    with open(app.config['BLACKLIST_FILE']) as fp:
-        if request.form['data_hash'] in fp.readlines():
-            return Response()
+    checker = Checker(request.form['data_hash'])
+    checks_result = checker.check_all('signature', 'hash', 'blacklist')
+    if checks_result:
+        return checks_result
 
     file_data = request.files['file_data'].stream.read()
     file_size = len(file_data)
@@ -243,7 +272,6 @@ def upload_file():
         return response
 
     data_hash = sha256(file_data).hexdigest()
-
     if data_hash != request.form['data_hash']:
         response = jsonify(error_code=ERR_TRANSFER['MISMATCHED_HASH'])
         response.status_code = 400
@@ -259,13 +287,12 @@ def upload_file():
         hash=data_hash,
         role=request.form['file_role'],
         size=len(file_data),
-        owner=sender_address
+        owner=request.environ['sender_address']
     ).execute()
 
     response = jsonify(data_hash=data_hash,
                        file_role=request.form['file_role'])
     response.status_code = 201
-
     return response
 
 
