@@ -56,8 +56,10 @@
 </blockquote>
 <pre class="highlight shell"><code>    curl
         -F<span class="s2">"data_hash=3b438fd7b1f223890f18f8ffc50c19c00b08340fc4fc76a94ba3a1c160b332a0"</span> <span class="se">\</span>
-        -F<span class="s2">"file_role=3"</span> -F<span class="s2">"file_data=@file_name"</span> <span class="se">\</span>
-        /api/files/
+        -F<span class="s2">"file_role=000"</span> -F<span class="s2">"file_data=@file_name"</span> <span class="se">\</span>
+        -H<span class="s2">"sender_address: mn45zPRtyy159spQ77gR43NoJmZiw2fN3a"</span> <span class="se">\</span>
+        -H<span class="s2">"signature: IMiZ0ZJhC5kdORnGnfwBJm7ikyDSrl0Icqepd6XZIJCynYd5GLITTCbk4vCxuvGgnj4Z24ay6niXmqFxkctqu8U"</span> <span class="se">\</span>
+        /api/files/ 
 </code></pre>
 
 <blockquote>
@@ -65,7 +67,7 @@
 </blockquote>
 <pre class="highlight json"><code><span class="p">{</span><span class="w">
   </span><span class="nt">"data_hash"</span><span class="p">:</span><span class="w"> </span><span class="s2">"3b438fd7b1f223890f18f8ffc50c19c00b08340fc4fc76a94ba3a1c160b332a0"</span><span class="p">,</span><span class="w">
-  </span><span class="nt">"file_role"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w">
+  </span><span class="nt">"file_role"</span><span class="p">:</span><span class="w"> </span><span class="s2">"000"</span><span class="w">
 </span><span class="p">}</span><span class="w">
 </span></code></pre>
 
@@ -73,7 +75,7 @@
 
 <h3 id="http-request">HTTP Request</h3>
 
-<p><code class="prettyprint">POST /api/files</code></p>
+<p><code class="prettyprint">POST /api/files/</code></p>
 
 <h3 id="query-parameters">Query Parameters</h3>
 
@@ -94,14 +96,26 @@
 <tr>
 <td>POST</td>
 <td>file_role</td>
-<td>integer</td>
-<td>The uploading party needs to be able to set file roles. For example, if anyone can retrieve this file or only specified addresses. file_role have not been defined yet, so we just store whatever is passed and move on.</td>
+<td>string</td>
+<td>The uploading party needs to be able to set file roles. For example, if anyone can retrieve this file or only specified addresses. It contains three digits.</td>
 </tr>
 <tr>
 <td>POST</td>
 <td>file_data</td>
 <td>binary file</td>
-<td>Encrypted shard of the data. To ensure properly handling under the current specifications file_data should not be larger than 128 MB</td>
+<td>Encrypted shard of the data. To ensure properly handling under the current specifications file_data should not be larger than 128 MB.</td>
+</tr>
+<tr>
+<td>HEADER</td>
+<td>sender_address</td>
+<td>string</td>
+<td>The Bitcoin public key of the user that is trying to POST data.</td>
+</tr>
+<tr>
+<td>HEADER</td>
+<td>signature</td>
+<td>string</td>
+<td>Produced by signing <code class="prettyprint">data_hash</code> by the private key belonging to <code class="prettyprint">sender_address</code>.</td>
 </tr>
 </tbody></table>
 
@@ -109,20 +123,41 @@
 
 <p>User can download data via GET from an end node.</p>
 
+<table><thead>
+<tr>
+<th>Type</th>
+<th>Params</th>
+<th>Values</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>HEADER</td>
+<td>sender_address</td>
+<td>string</td>
+<td>The Bitcoin public key of the user that is trying to POST data.</td>
+</tr>
+<tr>
+<td>HEADER</td>
+<td>signature</td>
+<td>string</td>
+<td>Produced by signing <code class="prettyprint">data_hash</code> by the private key belonging to <code class="prettyprint">sender_address</code>.</td>
+</tr>
+</tbody></table>
+
 <blockquote>
 <p>To download data, use this code:</p>
 </blockquote>
 <pre class="highlight shell"><code>curl
     -X GET -H <span class="s2">"Content-type: application/json"</span> <span class="se">\</span>
     -H <span class="s2">"Accept: application/json"</span> <span class="se">\</span>
+        -H<span class="s2">"sender_address: mn45zPRtyy159spQ77gR43NoJmZiw2fN3a"</span> <span class="se">\</span>
+        -H<span class="s2">"signature: IMiZ0ZJhC5kdORnGnfwBJm7ikyDSrl0Icqepd6XZIJCynYd5GLITTCbk4vCxuvGgnj4Z24ay6niXmqFxkctqu8U"</span> <span class="se">\</span>
     /api/files/3b438fd7b1f223890f18f8ffc50c19c00b08340fc4fc76a94ba3a1c160b332a0
 </code></pre>
 
 <blockquote>
-<p>The above command returns JSON structured like this:
-<code class="prettyprint">binary data
-....binary data goes here...
-</code></p>
+<p>The above command returns binary file data.</p>
 </blockquote>
 
 <h3 id="http-request">HTTP Request</h3>
@@ -185,6 +220,116 @@
 
 <p><code class="prettyprint">GET /api/files/</code></p>
 
+<h1 id="file-audit">File Audit</h1>
+
+<blockquote>
+<p>To audit file, use this code:</p>
+</blockquote>
+<pre class="highlight shell"><code>    curl
+        -F<span class="s2">"data_hash=3a6eb0790f39ac87c94f3856b2dd2c5d110e6811602261a9a923d3bb23adc8b7"</span> <span class="se">\</span>
+        -F<span class="s2">"challenge_seed=19b25856e1c150ca834cffc8b59b23adbd0ec0389e58eb22b3b64768098d002b"</span><span class="se">\</span>
+        -H<span class="s2">"sender_address: mn45zPRtyy159spQ77gR43NoJmZiw2fN3a"</span> <span class="se">\</span>
+        -H<span class="s2">"signature: IMiZ0ZJhC5kdORnGnfwBJm7ikyDSrl0Icqepd6XZIJCynYd5GLITTCbk4vCxuvGgnj4Z24ay6niXmqFxkctqu8U"</span> <span class="se">\</span>
+        /api/audit/ 
+</code></pre>
+
+<blockquote>
+<p>The above command returns JSON structured like this:</p>
+</blockquote>
+<pre class="highlight json"><code><span class="p">{</span><span class="w">
+  </span><span class="nt">"data_hash"</span><span class="p">:</span><span class="w"> </span><span class="s2">"3a6eb0790f39ac87c94f3856b2dd2c5d110e6811602261a9a923d3bb23adc8b7"</span><span class="p">,</span><span class="w">
+  </span><span class="nt">"challenge_seed"</span><span class="p">:</span><span class="w"> </span><span class="s2">"19b25856e1c150ca834cffc8b59b23adbd0ec0389e58eb22b3b64768098d002b"</span><span class="p">,</span><span class="w">
+  </span><span class="nt">"challenge_response"</span><span class="p">:</span><span class="w"> </span><span class="s2">"a068cf9870a41ecc36e18be9277bc353f88e29ad8a1b2a778581b37453de7692"</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre>
+
+<p>User can upload data via POST to an end node.</p>
+
+<h3 id="http-request">HTTP Request</h3>
+
+<p><code class="prettyprint">POST /api/audit/</code></p>
+
+<h3 id="query-parameters">Query Parameters</h3>
+
+<table><thead>
+<tr>
+<th>Type</th>
+<th>Params</th>
+<th>Values</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>POST</td>
+<td>data_hash</td>
+<td>string</td>
+<td>data_hash must be sent with each request. It ensures that the data passed to the endpoint has not been modified in transit. data_hash should be the SHA-256 hash of file_data</td>
+</tr>
+<tr>
+<td>POST</td>
+<td>challenge_seed</td>
+<td>string</td>
+<td>A SHA-256 hash of that you would like to add to the file data to generate a challenge response.</td>
+</tr>
+<tr>
+<td>HEADER</td>
+<td>sender_address</td>
+<td>string</td>
+<td>The Bitcoin public key of the user that is trying to POST data.</td>
+</tr>
+<tr>
+<td>HEADER</td>
+<td>signature</td>
+<td>string</td>
+<td>Produced by signing <code class="prettyprint">data_hash</code> by the private key belonging to <code class="prettyprint">sender_address</code>.</td>
+</tr>
+</tbody></table>
+
+<h1 id="serve-files">Serve files</h1>
+
+<p>User can download encrypted data (for allowed files) via GET from an end node using a decryption key.</p>
+
+<table><thead>
+<tr>
+<th>Type</th>
+<th>Params</th>
+<th>Values</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>HEADER</td>
+<td>sender_address</td>
+<td>string</td>
+<td>The Bitcoin public key of the user that is trying to POST data.</td>
+</tr>
+<tr>
+<td>HEADER</td>
+<td>signature</td>
+<td>string</td>
+<td>Produced by signing <code class="prettyprint">data_hash</code> by the private key belonging to <code class="prettyprint">sender_address</code>.</td>
+</tr>
+</tbody></table>
+
+<blockquote>
+<p>To download data, use this code:</p>
+</blockquote>
+<pre class="highlight shell"><code>curl
+    -X GET -H <span class="s2">"Content-type: application/json"</span> <span class="se">\</span>
+    -H <span class="s2">"Accept: application/json"</span> <span class="se">\</span>
+    -H<span class="s2">"sender_address: mn45zPRtyy159spQ77gR43NoJmZiw2fN3a"</span> <span class="se">\</span>
+    -H<span class="s2">"signature: IMiZ0ZJhC5kdORnGnfwBJm7ikyDSrl0Icqepd6XZIJCynYd5GLITTCbk4vCxuvGgnj4Z24ay6niXmqFxkctqu8U"</span> <span class="se">\</span>
+    /api/files/3a6eb0790f39ac87c94f3856b2dd2c5d110e6811602261a9a923d3bb23adc8b7?decryption_key<span class="o">=</span>%A3%B4e%EA%82%00%22%3A%C3%86%C0hn1%B3%F7%F7%F8%8EL7S%F3D%28%7C%85%95%CE%9D%D5B&amp;file_alias<span class="o">=</span>data.txt
+</code></pre>
+
+<blockquote>
+<p>The above command returns binary file data as <code class="prettyprint">file_name</code>.</p>
+</blockquote>
+
+<h3 id="http-request">HTTP Request</h3>
+
+<p><code class="prettyprint">GET /api/files/&lt;data_hash&gt;?decryption_key=&lt;decryption_key&gt;&amp;file_alias=&lt;file_alias&gt;</code></p>
+
           <h1 id="errors">Errors</h1>
 
 <aside class="notice">The MetaDisk API uses the following error codes:</aside>
@@ -195,6 +340,10 @@
 <th>Meaning</th>
 </tr>
 </thead><tbody>
+<tr>
+<td>Transfer errors</td>
+<td></td>
+</tr>
 <tr>
 <td>101</td>
 <td>Invalid SHA-256 hash</td>
@@ -218,6 +367,34 @@
 <tr>
 <td>301</td>
 <td>Particular hash not found</td>
+</tr>
+<tr>
+<td>401</td>
+<td>Invalid signature</td>
+</tr>
+<tr>
+<td>Audit errors</td>
+<td></td>
+</tr>
+<tr>
+<td>101</td>
+<td>Invalid SHA-256 hash</td>
+</tr>
+<tr>
+<td>102</td>
+<td>Invalid seed</td>
+</tr>
+<tr>
+<td>103</td>
+<td>File data is larger than 128MB</td>
+</tr>
+<tr>
+<td>301</td>
+<td>Particular hash not found</td>
+</tr>
+<tr>
+<td>401</td>
+<td>Invalid signature</td>
 </tr>
 </tbody></table>
 
