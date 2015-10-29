@@ -30,7 +30,7 @@ class Node(object):
         :return: None
         :rtype: NoneType
         """
-        self.__increase_bandwidth(volume)
+        self.__increase_traffic(volume)
 
     def add_outgoing(self, volume):
         """
@@ -40,7 +40,7 @@ class Node(object):
         :return: None
         :rtype: NoneType
         """
-        self.__increase_bandwidth(volume, False)
+        self.__increase_traffic(volume, False)
 
     @property
     def info(self):
@@ -132,7 +132,7 @@ class Node(object):
         with open(self.__file_path, 'w') as file_config:
             json.dump(self.info, file_config)
 
-    def __increase_bandwidth(self, volume, incoming=True):
+    def __increase_traffic(self, volume, incoming=True):
         direction = 'incoming' if incoming else 'outgoing'
         self.__current_bandwidth[direction] += abs(volume)
         self.__total_bandwidth[direction] += abs(volume)
