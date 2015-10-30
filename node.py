@@ -1,4 +1,4 @@
-import json, os, unittest
+import json, os.path, unittest
 
 from database import files
 
@@ -150,17 +150,17 @@ class NodeTest(unittest.TestCase):
         self.node = Node(os.path.join(BASEDIR, 'test_node.json'))
         # print(dir(self.node))
 
-        # creating of copy of init-data from 'test_node.json'
-        with open(os.path.join(BASEDIR, 'test_node.json'), 'r') as config_file:
+        # creating copy of init-data from nodes' instance init json-file
+        with open(self.node._Node__file_path, 'r') as config_file:
             init_node_data = json.load(config_file)
 
-        self.init_data_from__test_nodeJSON = {
+        self.data_from_test_nodeJSON = {
             '_Node__public_key': init_node_data['public_key'],
             '_Node__limits': init_node_data['bandwidth']['limits'],
             '_Node__current_bandwidth': init_node_data['bandwidth']['current'],
             '_Node__total_bandwidth': init_node_data['bandwidth']['total'],
             '_Node__capacity': init_node_data['storage']['capacity'],
-            '_Node__file_path': os.path.join(BASEDIR, 'test_node.json'),
+            '_Node__file_path': self.node._Node__file_path
         }
 
     def tearDown(self):
@@ -176,8 +176,30 @@ class NodeTest(unittest.TestCase):
         data_from_instance = dict(filter(lambda item: item[0].startswith('_Node__'),
                                          self.node.__dict__.items()))
         # verify the data in instance
-        self.assertEqual(data_from_instance, self.init_data_from__test_nodeJSON,
+        self.assertEqual(data_from_instance, self.data_from_test_nodeJSON,
                          "data in just created instance don't coincide with source file")
+
+    def test_node__increase_traffic(self):
+        """
+        test of increasing traffic
+        """
+        pass
+
+    def test_node__store(self):
+        """
+        test of updating files'
+        """
+        pass
+
+    def test_node_info(self):
+        """
+        test of compliance between info in instances jsons' file and
+        the data returned from node.info()
+        """
+        with open(self.node._Node__file_path, 'r') as config_file:
+                init_node_data = json.load(config_file)
+
+        self.assertEqual(self.node.info, init_node_data)
 
 
 if __name__ == "__main__":
