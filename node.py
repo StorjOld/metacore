@@ -1,4 +1,4 @@
-import json
+import json, unittest, os
 
 from database import files
 
@@ -138,3 +138,27 @@ class Node(object):
         self.__total_bandwidth[direction] += abs(volume)
 
         self._store()
+
+
+
+from config import BASEDIR
+
+class NodeTest(unittest.TestCase):
+
+    def setUp(self):
+        self.node = Node(os.path.join(BASEDIR, 'test_node.json'))
+
+
+    def tearDown(self):
+        del self.node
+
+    def test_node_get_instance(self):
+        """
+        Checking out an Node instance creation
+        """
+        self.assertIsInstance(self.node, Node)
+
+
+
+if __name__ == "__main__":
+    unittest.main()
