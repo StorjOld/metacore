@@ -1,4 +1,4 @@
-import json, unittest, os
+import json, os, unittest
 
 from database import files
 
@@ -143,11 +143,25 @@ class Node(object):
 
 from config import BASEDIR
 
+
 class NodeTest(unittest.TestCase):
-
     def setUp(self):
+        # creating of main testing instance
         self.node = Node(os.path.join(BASEDIR, 'test_node.json'))
+        # print(dir(self.node))
 
+        # creating of copy of init-data from 'test_node.json'
+        with open(os.path.join(BASEDIR, 'test_node.json'), 'r') as config_file:
+            init_node_data = json.load(config_file)
+
+        self.init_data_from__test_nodeJSON = {
+            '_Node__public_key': init_node_data['public_key'],
+            '_Node__limits': init_node_data['bandwidth']['limits'],
+            '_Node__current_bandwidth': init_node_data['bandwidth']['current'],
+            '_Node__total_bandwidth': init_node_data['bandwidth']['total'],
+            '_Node__capacity': init_node_data['storage']['capacity'],
+            '_Node__file_path': os.path.join(BASEDIR, 'test_node.json'),
+        }
 
     def tearDown(self):
         del self.node
@@ -156,8 +170,14 @@ class NodeTest(unittest.TestCase):
         """
         Checking out an Node instance creation
         """
-        self.assertIsInstance(self.node, Node)
+        self.assertIsInstance(self.node, Node, "crated object isn't instance of the Node")
 
+        # fetch privat data from Node instance
+        data_from_instance = dict(filter(lambda item: item[0].startswith('_Node__'),
+                                         self.node.__dict__.items()))
+        # verify the data in instance
+        self.assertEqual(data_from_instance, self.init_data_from__test_nodeJSON,
+                         "data in just created instance don't coincide with source file")
 
 
 if __name__ == "__main__":
