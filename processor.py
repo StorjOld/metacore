@@ -132,6 +132,18 @@ def download(data_hash: str, sender: str, signature: str,
     return open(os.path.join(app.config['UPLOAD_FOLDER'], data_hash), 'rb')
 
 
+def files_list() -> list:
+    """
+    Get list of files hashes stored on the Node.
+    :return: list of hashes
+    """
+    with open(app.config['BLACKLIST_FILE']) as fp:
+        blocked_hashes = tuple(fp.readlines())
+    hash_list = [_['hash'] for _ in files.select().execute()
+                 if _['hash'] not in blocked_hashes]
+    return hash_list
+
+
 def upload(file, data_hash: str, role: str, sender: str,
            signature: str):
     """

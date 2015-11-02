@@ -14,7 +14,7 @@ from sqlalchemy import and_
 
 from database import audit, files
 from error_codes import *
-from processor import app, download
+from processor import app, download, files_list
 from processor import upload
 
 
@@ -224,10 +224,7 @@ def files_info():
     """
     Get files hash list.
     """
-    with open(app.config['BLACKLIST_FILE']) as fp:
-        blocked_hashes = tuple(fp.readlines())
-    hash_list = [_['hash'] for _ in files.select().execute()
-                 if _['hash'] not in blocked_hashes]
+    hash_list = files_list()
     return json.dumps(hash_list), 200, {'Content-Type': 'application/json'}
 
 
