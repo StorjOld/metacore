@@ -43,7 +43,7 @@ class UploadFileCase(unittest.TestCase):
         self.blocked_hash = sha256(self.blocked_data).hexdigest()
         with open(self.app.config['BLACKLIST_FILE'], 'r+') as fp:
             self.initial_blacklist = fp.read()
-            fp.writelines((self.blocked_hash,))
+            fp.writelines((self.blocked_hash + '\n',))
 
         self.send_data = {
             'data_hash': valid_hash,

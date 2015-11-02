@@ -28,7 +28,7 @@ class GetFilesInfoCase(unittest.TestCase):
         self.blocked_hash = sha256(self.blocked_data).hexdigest()
         with open(self.app.config['BLACKLIST_FILE'], 'r+') as fp:
             self.initial_blacklist = fp.read()
-            fp.writelines((self.blocked_hash,))
+            fp.writelines((self.blocked_hash + '\n',))
 
         self.files_id = files.insert().values(
             hash=sha256(b'_').hexdigest(), role='000', size=1,

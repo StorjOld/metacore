@@ -1,21 +1,15 @@
 import json
-import os
 import re
-from datetime import datetime
-from datetime import timedelta
-from hashlib import sha256
 from urllib.parse import unquote_to_bytes
 
 from btctxstore import BtcTxStore
-from file_encryptor import convergence
-from flask import Flask, Response
-from flask import abort, jsonify, request, send_from_directory, render_template
-from sqlalchemy import and_
+from flask import Response
+from flask import abort, jsonify, request, render_template
 
-from database import audit, files
+from database import files
 from error_codes import *
-from processor import app, download, files_list, node_info
-from processor import upload
+from processor import app
+from processor import audit_data, download, files_list, node_info, upload
 
 
 BTCTX_API = BtcTxStore(dryrun=True)
@@ -125,52 +119,34 @@ def audit_file():
     Generate challenge response by gotten challenge seed.
     """
     data_hash = request.form['data_hash']
-
-    checker = Checker(data_hash)
-    checks_result = checker.check_all('signature', 'hash', 'blacklist')
-    if checks_result:
-        return checks_result
-
     challenge_seed = request.form['challenge_seed']
-    if not hash_pattern.match(challenge_seed):
-        response = jsonify(error_code=ERR_AUDIT['INVALID_SEED'])
-        response.status_code = 400
+
+    result = audit_data(
+        data_hash,
+        challenge_seed,
+        request.environ['sender_address'],
+        request.environ['signature']
+    )
+
+    if isinstance(result, int):
+        if result == ERR_BLACKLIST:
+            abort(404)
+
+        if result == ERR_TRANSFER['LOST_FILE']:
+            with open(app.config['PEERS_FILE']) as peers_file:
+                response = jsonify(peers=[_.strip() for _ in peers_file])
+                response.status_code = 404
+        else:
+            response = jsonify(error_code=result)
+            response.status_code = (404 if result == ERR_TRANSFER['NOT_FOUND']
+                                    else 400)
+
         return response
-
-    file_check_result = checker.check_all('file')
-    if file_check_result:
-        return file_check_result
-
-    file = checker.file
-    sender_address = checker.sender_address
-    is_owner = sender_address == file.owner
-
-    current_attempts = audit.select(
-        and_(
-            audit.c.file_hash == data_hash,
-            audit.c.is_owners == is_owner,
-            audit.c.made_at >= datetime.now() - timedelta(hours=1)
-        )
-    ).count().scalar()
-
-    limits_section = 'owner' if is_owner else 'other'
-    if current_attempts >= app.config['AUDIT_RATE_LIMITS'][limits_section]:
-        response = jsonify(error_code=ERR_AUDIT['LIMIT_REACHED'])
-        response.status_code = 400
-        return response
-
-    audit.insert().values(file_hash=data_hash, is_owners=is_owner).execute()
-
-    with open(os.path.join(app.config['UPLOAD_FOLDER'], data_hash),
-              'rb') as f:
-        file_data = f.read()
-    challenge_response = sha256(file_data +
-                                challenge_seed.encode()).hexdigest()
 
     response = jsonify(
         data_hash=data_hash,
         challenge_seed=challenge_seed,
-        challenge_response=challenge_response
+        challenge_response=result
     )
     response.status_code = 201
     return response

@@ -39,7 +39,7 @@ class DownloadFileCase(unittest.TestCase):
         self.blocked_hash = sha256(self.blocked_data).hexdigest()
         with open(self.app.config['BLACKLIST_FILE'], 'r+') as fp:
             self.initial_blacklist = fp.read()
-            fp.writelines((self.blocked_hash,))
+            fp.writelines((self.blocked_hash + '\n',))
 
         self.file_saving_path = os.path.join(
             self.app.config['UPLOAD_FOLDER'], self.data_hash

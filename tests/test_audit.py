@@ -40,7 +40,7 @@ class AuditFileCase(unittest.TestCase):
         self.blocked_hash = sha256(self.blocked_data).hexdigest()
         with open(self.app.config['BLACKLIST_FILE'], 'r+') as fp:
             self.initial_blacklist = fp.read()
-            fp.writelines((self.blocked_hash,))
+            fp.writelines((self.blocked_hash + '\n',))
 
         self.file_saving_path = os.path.join(
             self.app.config['UPLOAD_FOLDER'], self.data_hash
@@ -77,7 +77,7 @@ class AuditFileCase(unittest.TestCase):
         self.other_signature = test_btctx_api.sign_unicode(test_other_wfi,
                                                            self.data_hash)
 
-        self.patcher = patch('storj.BTCTX_API', test_btctx_api)
+        self.patcher = patch('processor.BTCTX_API', test_btctx_api)
         self.patcher.start()
 
     def tearDown(self):
@@ -89,7 +89,11 @@ class AuditFileCase(unittest.TestCase):
         """
         self.patcher.stop()
 
-        os.unlink(self.file_saving_path)
+        try:
+            os.unlink(self.file_saving_path)
+        except FileNotFoundError:
+            pass
+
         files.delete().where(files.c.hash.in_(self.files_id)).execute()
         audit.delete().execute()
 
@@ -194,9 +198,8 @@ class AuditFileCase(unittest.TestCase):
         )
         response = self.make_request()
 
-        self.assertEqual(200, response.status_code,
-                         "'OK' status code is expected.")
-        self.assertFalse(response.data, "Nothing is expected.")
+        self.assertEqual(404, response.status_code,
+                         "'Not Found' status code is expected.")
 
     def test_private_by_other(self):
         """
@@ -288,6 +291,26 @@ class AuditFileCase(unittest.TestCase):
                          "Has to be a JSON.")
 
         self.assertDictEqual({'error_code': ERR_AUDIT['INVALID_SEED']},
+                             json.loads(response.data.decode()),
+                             "Unexpected response data.")
+
+    def test_lost_file(self):
+        """
+        Try to download lost file.
+        """
+        os.unlink(self.file_saving_path)
+
+        response = self.make_request()
+
+        self.assertEqual(404, response.status_code,
+                         "'Not Found' status code is expected.")
+        self.assertEqual('application/json', response.content_type,
+                         "Has to be a JSON.")
+
+        with open(self.app.config['PEERS_FILE']) as fp:
+            peers = [_.strip() for _ in fp]
+
+        self.assertDictEqual({'peers': peers},
                              json.loads(response.data.decode()),
                              "Unexpected response data.")
 

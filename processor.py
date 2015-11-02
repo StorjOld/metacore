@@ -1,12 +1,15 @@
 import os
 import re
+from datetime import datetime
+from datetime import timedelta
 from hashlib import sha256
 
 from btctxstore import BtcTxStore
 from file_encryptor import convergence
 from flask import Flask
+from sqlalchemy import and_
 
-from database import files
+from database import audit, files
 from error_codes import *
 
 app = Flask(__name__)
@@ -53,7 +56,7 @@ class Checker:
         :return: 'Blacklist' error code or None if hash is not in list.
         """
         with open(app.config['BLACKLIST_FILE']) as fp:
-            if self.data_hash in fp.readlines():
+            if self.data_hash in (_.strip() for _ in fp.readlines()):
                 return ERR_BLACKLIST
 
     def _check_hash(self):
@@ -93,6 +96,53 @@ class Checker:
                         self.file.owner != self.sender_address
         ):
             return ERR_AUDIT['NOT_FOUND']
+
+
+def audit_data(data_hash: str, seed: str, sender: str, signature: str,) -> str:
+    """
+    Generate challenge response by gotten challenge seed.
+    :param data_hash: SHA-256 hash of the file
+    :param seed: challenge seed
+    :param sender: sender's BitCoin address
+    :param signature: data signature
+    :return: challenge response generated from the file data and seed
+    """
+    checker = Checker(data_hash, sender, signature)
+    checks_result = checker.check_all('signature', 'hash', 'blacklist')
+    if checks_result:
+        return checks_result
+
+    if not hash_pattern.match(seed):
+        return ERR_AUDIT['INVALID_SEED']
+
+    file_check_result = checker.check_all('file')
+    if file_check_result:
+        return file_check_result
+
+    file = checker.file
+    is_owner = sender == file.owner
+
+    current_attempts = audit.select(
+        and_(
+            audit.c.file_hash == data_hash,
+            audit.c.is_owners == is_owner,
+            audit.c.made_at >= datetime.now() - timedelta(hours=1)
+        )
+    ).count().scalar()
+
+    limits_section = 'owner' if is_owner else 'other'
+    if current_attempts >= app.config['AUDIT_RATE_LIMITS'][limits_section]:
+        return ERR_AUDIT['LIMIT_REACHED']
+
+    audit.insert().values(file_hash=data_hash, is_owners=is_owner).execute()
+
+    try:
+        with open(os.path.join(app.config['UPLOAD_FOLDER'], data_hash),
+                  'rb') as f:
+            file_data = f.read()
+        return sha256(file_data + seed.encode()).hexdigest()
+    except FileNotFoundError:
+        return ERR_TRANSFER['LOST_FILE']
 
 
 def download(data_hash: str, sender: str, signature: str,
@@ -138,7 +188,7 @@ def files_list() -> list:
     :return: list of hashes
     """
     with open(app.config['BLACKLIST_FILE']) as fp:
-        blocked_hashes = tuple(fp.readlines())
+        blocked_hashes = [_.strip() for _ in fp.readlines()]
     hash_list = [_['hash'] for _ in files.select().execute()
                  if _['hash'] not in blocked_hashes]
     return hash_list
