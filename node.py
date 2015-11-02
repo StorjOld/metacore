@@ -1,4 +1,5 @@
 import json, os.path, unittest
+from unittest.mock import patch
 
 from database import files
 
@@ -140,14 +141,10 @@ class Node(object):
         self._store()
 
 
-
-from config import BASEDIR
-from unittest.mock import patch
-
-
 class NodeTest(unittest.TestCase):
     def setUp(self):
-        self.node = Node(os.path.join(BASEDIR, 'test_node.json'))
+        self.node = Node(os.path.join(os.path.dirname(__file__),
+                                      'test_node.json'))
 
         with open(self.node._Node__file_path, 'r') as config_file:
             init_node_data = json.load(config_file)
@@ -168,14 +165,19 @@ class NodeTest(unittest.TestCase):
         """
         Checking out an Node instance creation
         """
-        self.assertIsInstance(self.node, Node, "crated object isn't instance of the Node")
+        self.assertIsInstance(self.node, Node,
+                              "Crated object isn't instance of the Node")
 
         # fetch private data from Node instance
-        data_from_instance = dict(filter(lambda item: item[0].startswith('_Node__'),
-                                         self.node.__dict__.items()))
+        data_from_instance = dict(
+            filter(lambda item: item[0].startswith('_Node__'),
+                   self.node.__dict__.items())
+        )
         # verify the data in instance
-        self.assertEqual(data_from_instance, self.data_from_test_nodeJSON,
-                         "data in just created instance don't coincide with source file")
+        self.assertEqual(
+            data_from_instance, self.data_from_test_nodeJSON,
+            "Data in just created instance don't coincide with source file"
+        )
 
     def test_node__increase_traffic(self):
         """
