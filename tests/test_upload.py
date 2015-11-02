@@ -56,7 +56,7 @@ class UploadFileCase(unittest.TestCase):
             'signature': valid_signature
         }
 
-        self.patcher = patch('storj.BTCTX_API', test_btctx_api)
+        self.patcher = patch('processor.BTCTX_API', test_btctx_api)
         self.patcher.start()
 
     def tearDown(self):
@@ -201,8 +201,8 @@ class UploadFileCase(unittest.TestCase):
 
         response = self._make_request(self.send_data)
 
-        self.assertEqual(200, response.status_code,
-                         "'OK' status code is expected.")
+        self.assertEqual(404, response.status_code,
+                         "'Not Found' status code is expected.")
 
         self.assertSetEqual(
             self.files,

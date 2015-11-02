@@ -8,8 +8,8 @@ from urllib.parse import unquote_to_bytes
 
 from btctxstore import BtcTxStore
 from file_encryptor import convergence
-from flask import Flask, jsonify, request, send_from_directory, Response, \
-    render_template
+from flask import Flask, Response
+from flask import abort, jsonify, request, send_from_directory, render_template
 from sqlalchemy import and_
 
 from database import audit, files
@@ -181,6 +181,7 @@ def download_file(data_hash):
     """
     Download stored file from the Node.
     Check if data_hash is valid SHA-256 hash matched with existing file.
+    :param data_hash: SHA-256 hash for needed file.
     """
     node = app.config['NODE']
 
@@ -248,51 +249,29 @@ def status_info():
 def upload_file():
     """
     Upload file to the Node.
-    Check if data_hash is valid SHA-256 hash matched with uploading file.
-    Check file size.
-    Save uploaded file to the Upload Dir and insert a record in the 'files'
-    table.
     """
-    node = app.config['NODE']
-
-    checker = Checker(request.form['data_hash'])
-    checks_result = checker.check_all('signature', 'hash', 'blacklist')
-    if checks_result:
-        return checks_result
-
-    file_data = request.files['file_data'].stream.read()
-    file_size = len(file_data)
-
-    if file_size > app.config['MAX_FILE_SIZE']:
-        response = jsonify(error_code=ERR_TRANSFER['HUGE_FILE'])
-        response.status_code = 400
-        return response
-
-    if file_size > node.capacity:
-        response = jsonify(error_code=ERR_TRANSFER['FULL_DISK'])
-        response.status_code = 400
-        return response
-
-    if node.limits['incoming'] is not None and (
-                file_size > node.limits['incoming'] - node.current['incoming']
-    ):
-        response = jsonify(error_code=ERR_TRANSFER['LIMIT_REACHED'])
-        response.status_code = 400
-        return response
-
-    data_hash = sha256(file_data).hexdigest()
-    if data_hash != request.form['data_hash']:
-        response = jsonify(error_code=ERR_TRANSFER['MISMATCHED_HASH'])
-        response.status_code = 400
-        return response
 
     file_role = request.form['file_role']
+    data_hash = request.form['data_hash']
 
-    upload(file_data, data_hash, file_role, request.environ['sender_address'])
+    error_code = upload(
+        request.files['file_data'].stream,
+        data_hash,
+        file_role,
+        request.environ['sender_address'],
+        request.environ['signature']
+    )
+    if error_code:
+        if error_code == ERR_BLACKLIST:
+            abort(404)
 
-    response = jsonify(data_hash=data_hash, file_role=file_role)
-    response.status_code = 201
-    return response
+        response = jsonify(error_code=error_code)
+        response.status_code = 400
+        return response
+    else:
+        response = jsonify(data_hash=data_hash, file_role=file_role)
+        response.status_code = 201
+        return response
 
 
 if __name__ == '__main__':
