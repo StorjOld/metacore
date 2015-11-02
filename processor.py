@@ -3,6 +3,7 @@ import re
 from hashlib import sha256
 
 from btctxstore import BtcTxStore
+from file_encryptor import convergence
 from flask import Flask
 
 from database import files
@@ -94,6 +95,43 @@ class Checker:
             return ERR_AUDIT['NOT_FOUND']
 
 
+def download(data_hash: str, sender: str, signature: str,
+             decryption_key: bytes = None):
+    """
+    Check if data_hash is valid SHA-256 hash matched with existing file.
+    Download stored file from the Node.
+    :param data_hash: SHA-256 hash for needed file
+    :param sender: file sender's BitCoin address
+    :param signature: data signature
+    :param decryption_key: key for decrypt stored file
+    :return: file data generator
+    """
+    node = app.config['NODE']
+
+    checker = Checker(data_hash, sender, signature)
+    checks_result = checker.check_all('signature', 'hash', 'blacklist', 'file')
+    if checks_result:
+        return checks_result
+
+    file = checker.file
+    if node.limits['outgoing'] is not None and (
+                file.size > node.limits['outgoing'] - node.current['outgoing']
+    ):
+        return ERR_TRANSFER['LIMIT_REACHED']
+
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], data_hash)
+    if not os.path.exists(file_path):
+        return ERR_TRANSFER['LOST_FILE']
+
+    if decryption_key:
+        if file.role[2] == '1':
+            return convergence.decrypt_generator(file_path, decryption_key)
+        else:
+            return ERR_TRANSFER['NOT_FOUND']
+
+    return open(os.path.join(app.config['UPLOAD_FOLDER'], data_hash), 'rb')
+
+
 def upload(file, data_hash: str, role: str, sender: str,
            signature: str):
     """
@@ -106,7 +144,7 @@ def upload(file, data_hash: str, role: str, sender: str,
     :param data_hash: SHA-256 hash for data
     :param role: file role
     :param sender: file sender's BitCoin address
-    :param signature:
+    :param signature: data signature
     """
     node = app.config['NODE']
     checker = Checker(data_hash, sender, signature)

@@ -70,7 +70,7 @@ class ServeFileCase(unittest.TestCase):
             'file_alias': 'file.txt'
         }
 
-        self.patcher = patch('storj.BTCTX_API', test_btctx_api)
+        self.patcher = patch('processor.BTCTX_API', test_btctx_api)
         self.patcher.start()
 
     def tearDown(self):

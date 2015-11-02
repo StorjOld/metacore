@@ -62,7 +62,7 @@ class DownloadFileCase(unittest.TestCase):
             'signature': valid_signature
         }
 
-        self.patcher = patch('storj.BTCTX_API', test_btctx_api)
+        self.patcher = patch('processor.BTCTX_API', test_btctx_api)
         self.patcher.start()
 
     def tearDown(self):
@@ -161,10 +161,7 @@ class DownloadFileCase(unittest.TestCase):
                                                                 self.data_hash)
         response = self.make_request()
 
-        self.assertEqual(200, response.status_code,
-                         "'OK' status code is expected.")
-
-        self.assertFalse(response.data, "Nothing is expected.")
+        self.assertEqual(404, response.status_code)
 
     def test_private_by_other(self):
         """

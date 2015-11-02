@@ -8,6 +8,7 @@ ERR_TRANSFER = {
     'FULL_DISK': 201,
     'LIMIT_REACHED': 202,
     'NOT_FOUND': 301,
+    'LOST_FILE': 302,
     'INVALID_SIGNATURE': 401
 }
 

@@ -14,7 +14,7 @@ from sqlalchemy import and_
 
 from database import audit, files
 from error_codes import *
-from processor import app
+from processor import app, download
 from processor import upload
 
 
@@ -183,46 +183,40 @@ def download_file(data_hash):
     Check if data_hash is valid SHA-256 hash matched with existing file.
     :param data_hash: SHA-256 hash for needed file.
     """
-    node = app.config['NODE']
-
-    checker = Checker(data_hash)
-    checks_result = checker.check_all('signature', 'hash', 'blacklist', 'file')
-    if checks_result:
-        return checks_result
-
-    file = checker.file
-    if node.limits['outgoing'] is not None and (
-                file.size > node.limits['outgoing'] - node.current['outgoing']
-    ):
-        response = jsonify(error_code=ERR_TRANSFER['LIMIT_REACHED'])
-        response.status_code = 400
-        return response
 
     decryption_key = request.values.get('decryption_key')
     if decryption_key:
-        if file.role[2] == '1':
-            response = Response(
-                convergence.decrypt_generator(
-                    os.path.join(app.config['UPLOAD_FOLDER'], data_hash),
-                    unquote_to_bytes(decryption_key)
-                ),
-                200,
-                {'X-Sendfile': request.values.get('file_alias', data_hash),
-                 'Content-Type': 'application/octet-stream'}
-            )
-            return response
-        else:
-            response = jsonify(error_code=ERR_TRANSFER['NOT_FOUND'])
-            response.status_code = 404
-            return response
+        decryption_key = unquote_to_bytes(decryption_key)
 
-    if os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], data_hash)):
-        return send_from_directory(app.config['UPLOAD_FOLDER'], data_hash)
-    else:
-        with open(app.config['PEERS_FILE']) as fp:
-            response = jsonify(peers=[_.strip() for _ in fp])
-        response.status_code = 404
+    result = download(
+        data_hash,
+        request.environ['sender_address'],
+        request.environ['signature'],
+        decryption_key
+    )
+
+    if isinstance(result, int):
+        if result == ERR_BLACKLIST:
+            abort(404)
+
+        if result == ERR_TRANSFER['LOST_FILE']:
+            with open(app.config['PEERS_FILE']) as peers_file:
+                response = jsonify(peers=[_.strip() for _ in peers_file])
+                response.status_code = 404
+        else:
+            response = jsonify(error_code=result)
+            response.status_code = (404 if result == ERR_TRANSFER['NOT_FOUND']
+                                    else 400)
+
         return response
+
+    response = Response(
+        result,
+        200,
+        {'X-Sendfile': request.values.get('file_alias', data_hash),
+         'Content-Type': 'application/octet-stream'}
+    )
+    return response
 
 
 @app.route('/api/files/', methods=['GET'])
