@@ -14,9 +14,9 @@ from sqlalchemy import and_
 
 from database import audit, files
 from error_codes import *
+from processor import app
+from processor import upload
 
-app = Flask(__name__)
-app.config.from_object('config')
 
 BTCTX_API = BtcTxStore(dryrun=True)
 
@@ -286,21 +286,11 @@ def upload_file():
         response.status_code = 400
         return response
 
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    file_role = request.form['file_role']
 
-    with open(os.path.join(app.config['UPLOAD_FOLDER'], data_hash),
-              'wb') as file_to_save:
-        file_to_save.write(file_data)
+    upload(file_data, data_hash, file_role, request.environ['sender_address'])
 
-    files.insert().values(
-        hash=data_hash,
-        role=request.form['file_role'],
-        size=len(file_data),
-        owner=request.environ['sender_address']
-    ).execute()
-
-    response = jsonify(data_hash=data_hash,
-                       file_role=request.form['file_role'])
+    response = jsonify(data_hash=data_hash, file_role=file_role)
     response.status_code = 201
     return response
 
