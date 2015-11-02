@@ -49,7 +49,7 @@ class Node(object):
         :return: Node status info
         :rtype: dict
         """
-        files_size = (_['size'] for _ in files.select().execute())
+        files_size = [_['size'] for _ in files.select().execute()]
         info = {
             'public_key': self.public_key,
             'bandwidth': {
@@ -142,15 +142,13 @@ class Node(object):
 
 
 from config import BASEDIR
+from unittest.mock import patch
 
 
 class NodeTest(unittest.TestCase):
     def setUp(self):
-        # creating of main testing instance
         self.node = Node(os.path.join(BASEDIR, 'test_node.json'))
-        # print(dir(self.node))
 
-        # creating copy of init-data from nodes' instance init json-file
         with open(self.node._Node__file_path, 'r') as config_file:
             init_node_data = json.load(config_file)
 
@@ -172,7 +170,7 @@ class NodeTest(unittest.TestCase):
         """
         self.assertIsInstance(self.node, Node, "crated object isn't instance of the Node")
 
-        # fetch privat data from Node instance
+        # fetch private data from Node instance
         data_from_instance = dict(filter(lambda item: item[0].startswith('_Node__'),
                                          self.node.__dict__.items()))
         # verify the data in instance
@@ -191,15 +189,23 @@ class NodeTest(unittest.TestCase):
         """
         pass
 
-    def test_node_info(self):
+    @patch.object(files, 'select')
+    def test_node_info(self, mock_select):
         """
-        test of compliance between info in instances jsons' file and
+        Test of compliance between info in instances json file and
         the data returned from node.info()
         """
-        with open(self.node._Node__file_path, 'r') as config_file:
-                init_node_data = json.load(config_file)
+        files_size = (50, 700, 200)
+        select_all_files = [{'size': item} for item in files_size]
+        mock_execute = mock_select.return_value
+        mock_execute.execute.return_value = select_all_files
 
-        self.assertEqual(self.node.info, init_node_data)
+        with open(self.node._Node__file_path, 'r') as config_file:
+            init_node_data = json.load(config_file)
+            init_node_data['storage']['max_file_size'] = max(files_size)
+            init_node_data['storage']['used'] = sum(files_size)
+
+        self.assertEqual(init_node_data, self.node.info)
 
 
 if __name__ == "__main__":
