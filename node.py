@@ -1,4 +1,4 @@
-import json
+import json, os.path, unittest
 
 from database import files
 
@@ -49,7 +49,7 @@ class Node(object):
         :return: Node status info
         :rtype: dict
         """
-        files_size = (_['size'] for _ in files.select().execute())
+        files_size = [_['size'] for _ in files.select().execute()]
         info = {
             'public_key': self.public_key,
             'bandwidth': {
@@ -138,3 +138,75 @@ class Node(object):
         self.__total_bandwidth[direction] += abs(volume)
 
         self._store()
+
+
+
+from config import BASEDIR
+from unittest.mock import patch
+
+
+class NodeTest(unittest.TestCase):
+    def setUp(self):
+        self.node = Node(os.path.join(BASEDIR, 'test_node.json'))
+
+        with open(self.node._Node__file_path, 'r') as config_file:
+            init_node_data = json.load(config_file)
+
+        self.data_from_test_nodeJSON = {
+            '_Node__public_key': init_node_data['public_key'],
+            '_Node__limits': init_node_data['bandwidth']['limits'],
+            '_Node__current_bandwidth': init_node_data['bandwidth']['current'],
+            '_Node__total_bandwidth': init_node_data['bandwidth']['total'],
+            '_Node__capacity': init_node_data['storage']['capacity'],
+            '_Node__file_path': self.node._Node__file_path
+        }
+
+    def tearDown(self):
+        del self.node
+
+    def test_node_get_instance(self):
+        """
+        Checking out an Node instance creation
+        """
+        self.assertIsInstance(self.node, Node, "crated object isn't instance of the Node")
+
+        # fetch private data from Node instance
+        data_from_instance = dict(filter(lambda item: item[0].startswith('_Node__'),
+                                         self.node.__dict__.items()))
+        # verify the data in instance
+        self.assertEqual(data_from_instance, self.data_from_test_nodeJSON,
+                         "data in just created instance don't coincide with source file")
+
+    def test_node__increase_traffic(self):
+        """
+        test of increasing traffic
+        """
+        pass
+
+    def test_node__store(self):
+        """
+        test of updating files'
+        """
+        pass
+
+    @patch.object(files, 'select')
+    def test_node_info(self, mock_select):
+        """
+        Test of compliance between info in instances json file and
+        the data returned from node.info()
+        """
+        files_size = (50, 700, 200)
+        select_all_files = [{'size': item} for item in files_size]
+        mock_execute = mock_select.return_value
+        mock_execute.execute.return_value = select_all_files
+
+        with open(self.node._Node__file_path, 'r') as config_file:
+            init_node_data = json.load(config_file)
+            init_node_data['storage']['max_file_size'] = max(files_size)
+            init_node_data['storage']['used'] = sum(files_size)
+
+        self.assertEqual(init_node_data, self.node.info)
+
+
+if __name__ == "__main__":
+    unittest.main()
