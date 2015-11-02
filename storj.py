@@ -14,7 +14,7 @@ from sqlalchemy import and_
 
 from database import audit, files
 from error_codes import *
-from processor import app, download, files_list
+from processor import app, download, files_list, node_info
 from processor import upload
 
 
@@ -233,7 +233,7 @@ def status_info():
     """
     Get the Node status info.
     """
-    return jsonify(app.config['NODE'].info)
+    return jsonify(node_info())
 
 
 @app.route('/api/files/', methods=['POST'])

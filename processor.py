@@ -144,6 +144,14 @@ def files_list() -> list:
     return hash_list
 
 
+def node_info() -> dict:
+    """
+    Get the Node info.
+    :return: Node info dict
+    """
+    return app.config['NODE'].info
+
+
 def upload(file, data_hash: str, role: str, sender: str,
            signature: str):
     """
