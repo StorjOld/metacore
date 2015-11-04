@@ -99,7 +99,7 @@ class DownloadFileCase(unittest.TestCase):
         with self.app.test_client() as c:
             response = c.get(
                 path=self.base_url + self.data_hash,
-                environ_base=headers
+                headers=headers
             )
 
         return response

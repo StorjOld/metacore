@@ -100,7 +100,7 @@ class ServeFileCase(unittest.TestCase):
             response = c.get(
                 path=self.base_url + self.data_hash,
                 query_string=self.query_string,
-                environ_base=headers
+                headers=headers
             )
 
         return response

@@ -104,7 +104,7 @@ class UploadFileCase(unittest.TestCase):
                 path=self.url,
                 data=data,
                 content_type='multipart/form-data',
-                environ_base=headers
+                headers=headers
             )
 
         return response
