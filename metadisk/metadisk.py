@@ -12,7 +12,7 @@ from btctxstore import BtcTxStore
 
 __author__ = 'eugene.viktorov'
 
-url_base = 'http://0.0.0.0:5000/api/files/'
+url_base = 'http://dev.storj.anvil8.com/api/files/'
 
 parser = argparse.ArgumentParser()
 
