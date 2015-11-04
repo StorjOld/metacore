@@ -12,7 +12,7 @@ from processor import app
 from processor import audit_data, download, files_list, node_info, upload
 
 
-BTCTX_API = BtcTxStore(dryrun=True)
+BTCTX_API = BtcTxStore(dryrun=True, testnet=True)
 
 hash_pattern = re.compile(r'^[a-f\d]{64}$')
 
@@ -124,8 +124,8 @@ def audit_file():
     result = audit_data(
         data_hash,
         challenge_seed,
-        request.environ['sender_address'],
-        request.environ['signature']
+        request.headers.get('sender_address'),
+        request.headers.get('signature')
     )
 
     if isinstance(result, int):
@@ -166,8 +166,8 @@ def download_file(data_hash):
 
     result = download(
         data_hash,
-        request.environ['sender_address'],
-        request.environ['signature'],
+        request.headers.get('sender_address'),
+        request.headers.get('signature'),
         decryption_key
     )
 
@@ -217,7 +217,6 @@ def upload_file():
     """
     Upload file to the Node.
     """
-
     file_role = request.form['file_role']
     data_hash = request.form['data_hash']
 
@@ -225,8 +224,8 @@ def upload_file():
         request.files['file_data'].stream,
         data_hash,
         file_role,
-        request.environ['sender_address'],
-        request.environ['signature']
+        request.headers.get('sender_address'),
+        request.headers.get('signature')
     )
     if error_code:
         if error_code == ERR_BLACKLIST:

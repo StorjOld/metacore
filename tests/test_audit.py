@@ -115,7 +115,7 @@ class AuditFileCase(unittest.TestCase):
             response = c.post(
                 path=self.url,
                 data=self.send_data,
-                environ_base=headers
+                headers=headers
             )
 
         return response
