@@ -15,7 +15,8 @@ url_base = 'http://dev.storj.anvil8.com'
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('action', choices=['audit', 'download', 'info', 'upload'])
+parser.add_argument('action',
+                    choices=['audit', 'download', 'files', 'info', 'upload'])
 
 if sys.argv[1] == 'audit':
     parser.add_argument('file_hash', type=str, help="file hash")
@@ -77,6 +78,11 @@ elif args.action == 'download':
     else:
         print(r.status_code)
         print(r.text)
+
+elif args.action == 'files':
+    r = requests.get(urljoin(url_base, '/api/files/'))
+    print(r.status_code)
+    print(r.text)
 
 elif args.action == 'info':
     r = requests.get(urljoin(url_base, '/api/nodes/me/'))
