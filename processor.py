@@ -15,7 +15,7 @@ from error_codes import *
 app = Flask(__name__)
 app.config.from_object('config')
 
-BTCTX_API = BtcTxStore(dryrun=True)
+BTCTX_API = BtcTxStore(testnet=True, dryrun=True)
 
 hash_pattern = re.compile(r'^[a-f\d]{64}$')
 
@@ -72,11 +72,15 @@ class Checker:
         Check if signature header match with data_hash parameter in request.
         :return: 'Invalid Signature' error code or None if signature is valid.
         """
+        print(self.sender_address)
+        print(self.signature)
+        print(self.data_hash)
         signature_is_valid = BTCTX_API.verify_signature_unicode(
             self.sender_address,
             self.signature,
             self.data_hash
         )
+        print(signature_is_valid)
         if not signature_is_valid:
             return ERR_AUDIT['INVALID_SIGNATURE']
 

@@ -2,106 +2,15 @@ import json
 import re
 from urllib.parse import unquote_to_bytes
 
-from btctxstore import BtcTxStore
 from flask import Response
 from flask import abort, jsonify, request, render_template
 
-from database import files
 from error_codes import *
 from processor import app
 from processor import audit_data, download, files_list, node_info, upload
 
 
-BTCTX_API = BtcTxStore(dryrun=True, testnet=True)
-
 hash_pattern = re.compile(r'^[a-f\d]{64}$')
-
-
-class Checker:
-    """
-    Aggregator for common data and params checks.
-    """
-
-    def __init__(self, data_hash):
-        self.data_hash = data_hash
-        self.sender_address = request.environ['sender_address']
-
-        self._checks = {
-            'blacklist': self._check_blacklist,
-            'file': self._get_file_from_hash,
-            'hash': self._check_hash,
-            'signature': self._check_signature
-        }
-
-    def check_all(self, *check_list):
-        """
-        Do all selected checks in selected order.
-        :return: the first failed check result or None
-            if all ones are successful
-        :rtype: Response or NoneType
-        """
-        try:
-            return next(filter(None, [self._checks[check_item]()
-                                      for check_item in check_list]))
-        except StopIteration:
-            return None
-
-    def _check_blacklist(self):
-        """
-        Check if data_hash is in Blacklist.
-        :return: 'OK' HTTP Response with nothing or None if hash
-            is not in list.
-        :rtype: Response or NoneType
-        """
-        with open(app.config['BLACKLIST_FILE']) as fp:
-            if self.data_hash in fp.readlines():
-                return Response()
-
-    def _check_hash(self):
-        """
-        Check if data_hash is a valid SHA-256 hash.
-        :return: 'Bad Request' HTTP Response or None if hash is valid.
-        :rtype: Response or NoneType
-        """
-        if not hash_pattern.match(self.data_hash):
-            response = jsonify(error_code=ERR_AUDIT['INVALID_HASH'])
-            response.status_code = 400
-            return response
-
-    def _check_signature(self):
-        """
-        Check if signature header match with data_hash parameter in request.
-        :return: 'Bad Request' HTTP Response or None if signature is valid.
-        :rtype: Response or NoneType
-        """
-        signature_is_valid = BTCTX_API.verify_signature_unicode(
-            request.environ['sender_address'],
-            request.environ['signature'],
-            self.data_hash
-        )
-        if not signature_is_valid:
-            response = jsonify(error_code=ERR_AUDIT['INVALID_SIGNATURE'])
-            response.status_code = 400
-            return response
-
-    def _get_file_from_hash(self):
-        """
-        Check if file record with data_hash exists in the `files` table
-            and allowed for getting and then store it as self.file.
-        :return: 'Not Found' HTTP Response with nothing or None.
-        :rtype: Response or RowProxy
-        """
-        self.file = files.select(
-            files.c.hash == self.data_hash
-        ).execute().first()
-
-        if not self.file or (
-                        self.file.role[1] != '0' and
-                        self.file.owner != request.environ['sender_address']
-        ):
-            response = jsonify(error_code=ERR_AUDIT['NOT_FOUND'])
-            response.status_code = 404
-            return response
 
 
 @app.route('/')
