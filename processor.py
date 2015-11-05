@@ -72,15 +72,11 @@ class Checker:
         Check if signature header match with data_hash parameter in request.
         :return: 'Invalid Signature' error code or None if signature is valid.
         """
-        print(self.sender_address)
-        print(self.signature)
-        print(self.data_hash)
         signature_is_valid = BTCTX_API.verify_signature_unicode(
             self.sender_address,
             self.signature,
             self.data_hash
         )
-        print(signature_is_valid)
         if not signature_is_valid:
             return ERR_AUDIT['INVALID_SIGNATURE']
 

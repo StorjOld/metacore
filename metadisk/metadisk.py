@@ -10,7 +10,6 @@ from urllib.parse import urljoin
 import requests
 from btctxstore import BtcTxStore
 
-__author__ = 'eugene.viktorov'
 
 url_base = 'http://dev.storj.anvil8.com/api/files/'
 
@@ -23,15 +22,14 @@ if sys.argv[1] == 'download':
     parser.add_argument('--decryption_key', type=str, help="decryption key")
     parser.add_argument('--rename_file', type=str, help="rename file")
 elif sys.argv[1] == 'upload':
-    parser.add_argument('file', type=argparse.FileType('rb'), help="path to file")
+    parser.add_argument('file', type=argparse.FileType('rb'),
+                        help="path to file")
     parser.add_argument('-r', '--file_role', type=str, default='001',
-                    help="set file role")
-
-
+                        help="set file role")
 
 args = parser.parse_args()
 
-btctx_api = BtcTxStore()
+btctx_api = BtcTxStore(testnet=True, dryrun=True)
 sender_key = btctx_api.create_key()
 sender_address = btctx_api.get_address(sender_key)
 
@@ -46,7 +44,7 @@ if args.action == 'download':
         urljoin(url_base, args.file_hash),
         params=params,
         headers={
-            'sender_address': sender_address,
+            'sender-address': sender_address,
             'signature': signature,
         }
     )
@@ -74,7 +72,7 @@ elif args.action == 'upload':
         },
         files=files,
         headers={
-            'sender_address': sender_address,
+            'sender-address': sender_address,
             'signature': signature,
         }
     )
