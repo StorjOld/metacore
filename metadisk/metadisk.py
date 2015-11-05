@@ -11,13 +11,16 @@ import requests
 from btctxstore import BtcTxStore
 
 
-url_base = 'http://dev.storj.anvil8.com/api/files/'
+url_base = 'http://dev.storj.anvil8.com'
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('action', choices=['download', 'upload'])
+parser.add_argument('action', choices=['audit', 'download', 'upload'])
 
-if sys.argv[1] == 'download':
+if sys.argv[1] == 'audit':
+    parser.add_argument('file_hash', type=str, help="file hash")
+    parser.add_argument('seed', type=str, help="challenge seed")
+elif sys.argv[1] == 'download':
     parser.add_argument('file_hash', type=str, help="file hash")
     parser.add_argument('--decryption_key', type=str, help="decryption key")
     parser.add_argument('--rename_file', type=str, help="rename file")
@@ -33,15 +36,33 @@ btctx_api = BtcTxStore(testnet=True, dryrun=True)
 sender_key = btctx_api.create_key()
 sender_address = btctx_api.get_address(sender_key)
 
-if args.action == 'download':
+if args.action == 'audit':
     signature = btctx_api.sign_unicode(sender_key, args.file_hash)
-    params={}
+
+    r = requests.post(
+        urljoin(url_base, '/api/audit/'),
+        data={
+            'data_hash': args.file_hash,
+            'challenge_seed': args.seed,
+        },
+        headers={
+            'sender-address': sender_address,
+            'signature': signature,
+        }
+    )
+
+    print(r.status_code)
+    print(r.text)
+
+elif args.action == 'download':
+    signature = btctx_api.sign_unicode(sender_key, args.file_hash)
+    params = {}
     if args.decryption_key:
         params['decryption_key'] = args.decryption_key
     if args.rename_file:
         params['file_alias'] = args.rename_file
     r = requests.get(
-        urljoin(url_base, args.file_hash),
+        urljoin(url_base, '/api/files/' + args.file_hash),
         params=params,
         headers={
             'sender-address': sender_address,
@@ -57,7 +78,6 @@ if args.action == 'download':
         print(r.status_code)
         print(r.text)
 
-
 elif args.action == 'upload':
     files = {'file_data': args.file}
     data_hash = sha256(args.file.read()).hexdigest()
@@ -65,7 +85,7 @@ elif args.action == 'upload':
     signature = btctx_api.sign_unicode(sender_key, data_hash)
 
     r = requests.post(
-        url_base,
+        urljoin(url_base, '/api/files/'),
         data={
             'data_hash': data_hash,
             'file_role': args.file_role,
