@@ -1,5 +1,9 @@
-import json, os.path, unittest
-from unittest.mock import patch
+import json
+import os.path
+import unittest
+
+from pathlib import Path
+from unittest.mock import patch, MagicMock, mock_open
 
 from database import files
 
@@ -131,7 +135,7 @@ class Node(object):
         """
 
         with open(self.__file_path, 'w') as file_config:
-            json.dump(self.info, file_config)
+            json.dump(self.info, file_config, indent='\t')
 
     def __increase_traffic(self, volume, incoming=True):
         direction = 'incoming' if incoming else 'outgoing'
@@ -179,17 +183,65 @@ class NodeTest(unittest.TestCase):
             "Data in just created instance don't coincide with source file"
         )
 
-    def test_node__increase_traffic(self):
+    def test_node_add_incoming(self):
         """
-        test of increasing traffic
+        Test Node.add_incoming()
         """
-        pass
+        self.node._Node__increase_traffic = MagicMock()
+        self.node.add_incoming(500)
+        self.node._Node__increase_traffic.assert_called_once_with(500)
 
-    def test_node__store(self):
+    def test_node_add_outgoing(self):
         """
-        test of updating files'
+        Test Node.add_outgoing()
         """
-        pass
+        self.node._Node__increase_traffic = MagicMock()
+        self.node.add_outgoing(500)
+        self.node._Node__increase_traffic.assert_called_once_with(500, False)
+
+    def test_node_current(self):
+        self.assertIs(self.node._Node__current_bandwidth, self.node.current)
+        self.assertIsInstance(self.node._Node__current_bandwidth, dict)
+
+    def test_node_capacity(self):
+        self.assertIs(self.node._Node__capacity, self.node.capacity)
+        self.assertIsInstance(self.node.capacity, int)
+
+    def test_node_limits(self):
+        self.assertIs(self.node._Node__limits, self.node.limits)
+        self.assertIsInstance(self.node.limits, dict)
+
+    def test_node_total(self):
+        self.assertIs(self.node._Node__total_bandwidth, self.node.total)
+        self.assertIsInstance(self.node.total, dict)
+
+    def test_node_public_key(self):
+        self.assertIs(self.node._Node__public_key, self.node.public_key)
+        self.assertIsInstance(self.node.public_key, str)
+
+    def test_node_set_limits(self):
+        self.node.set_limits(incoming=200, outgoing=300)
+        self.assertEqual(
+            (
+                self.node._Node__limits['incoming'],
+                self.node._Node__limits['outgoing'],
+            ),
+            (
+                200,
+                300,
+            )
+        )
+
+    def test_node_store(self):
+        """
+        Test rewrite node's json
+        """
+        mocked_open = mock_open()
+        with patch('node.open', mocked_open, create=True):
+            self.node._store()
+        mocked_open.assert_called_once_with(self.node._Node__file_path, 'w')
+
+
 
     @patch.object(files, 'select')
     def test_node_info(self, mock_select):
@@ -208,6 +260,7 @@ class NodeTest(unittest.TestCase):
             init_node_data['storage']['used'] = sum(files_size)
 
         self.assertEqual(init_node_data, self.node.info)
+
 
 
 if __name__ == "__main__":
