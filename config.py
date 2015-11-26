@@ -1,6 +1,6 @@
 import os.path
 
-from node import Node
+from metacore.node import Node
 
 __author__ = 'karatel'
 

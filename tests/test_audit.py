@@ -5,10 +5,10 @@ import unittest
 from hashlib import sha256
 from unittest.mock import patch
 
-import storj
-from database import audit, files
-from error_codes import *
-from tests import *
+from metacore import storj
+from metacore.database import audit, files
+from metacore.error_codes import *
+from metacore.tests import *
 
 __author__ = 'karatel'
 
@@ -77,7 +77,7 @@ class AuditFileCase(unittest.TestCase):
         self.other_signature = test_btctx_api.sign_unicode(test_other_wfi,
                                                            self.data_hash)
 
-        self.patcher = patch('processor.BTCTX_API', test_btctx_api)
+        self.patcher = patch('metacore.processor.BTCTX_API', test_btctx_api)
         self.patcher.start()
 
     def tearDown(self):
@@ -321,7 +321,7 @@ class AuditFileCase(unittest.TestCase):
         mock_config = copy.deepcopy(self.app.config)
         mock_config['AUDIT_RATE_LIMITS']['owner'] = 2
 
-        with patch('storj.app.config', mock_config):
+        with patch('metacore.storj.app.config', mock_config):
             for i in range(self.app.config['AUDIT_RATE_LIMITS']['owner']):
                 self.make_request()
             response = self.make_request()
@@ -342,7 +342,7 @@ class AuditFileCase(unittest.TestCase):
         mock_config = copy.deepcopy(self.app.config)
         mock_config['AUDIT_RATE_LIMITS']['other'] = 2
 
-        with patch('storj.app.config', mock_config):
+        with patch('metacore.storj.app.config', mock_config):
             for i in range(self.app.config['AUDIT_RATE_LIMITS']['other']):
                 self.make_request(False)
             response = self.make_request(False)

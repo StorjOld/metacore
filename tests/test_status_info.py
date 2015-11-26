@@ -1,6 +1,6 @@
 import json
 import unittest
-import storj
+from metacore import storj
 
 __author__ = 'karatel'
 

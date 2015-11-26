@@ -2,9 +2,9 @@ import json
 import unittest
 from hashlib import sha256
 
-from database import files
-from tests import *
-import storj
+from metacore.database import files
+from metacore.tests import *
+from metacore import storj
 
 __author__ = 'karatel'
 

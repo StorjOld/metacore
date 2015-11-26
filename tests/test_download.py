@@ -5,10 +5,10 @@ import unittest
 from hashlib import sha256
 from unittest.mock import patch
 
-import storj
-from database import files
-from error_codes import *
-from tests import *
+from metacore import storj
+from metacore.database import files
+from metacore.error_codes import *
+from metacore.tests import *
 
 __author__ = 'karatel'
 
@@ -62,7 +62,7 @@ class DownloadFileCase(unittest.TestCase):
             'signature': valid_signature
         }
 
-        self.patcher = patch('processor.BTCTX_API', test_btctx_api)
+        self.patcher = patch('metacore.processor.BTCTX_API', test_btctx_api)
         self.patcher.start()
 
     def tearDown(self):
@@ -263,7 +263,7 @@ class DownloadFileCase(unittest.TestCase):
         mock_config = copy.deepcopy(self.app.config)
         mock_config['NODE'].set_limits(outgoing=1)
 
-        with patch('storj.app.config', mock_config):
+        with patch('metacore.storj.app.config', mock_config):
             response = self.make_request()
 
         self.assertEqual(400, response.status_code,

@@ -4,7 +4,7 @@ import unittest
 
 from unittest.mock import patch, MagicMock, mock_open
 
-from database import files
+from metacore.database import files
 
 __author__ = 'karatel'
 
@@ -267,7 +267,7 @@ class NodeTest(unittest.TestCase):
         Test of ability to rewrite node's json
         """
         mocked_open = mock_open()
-        with patch('node.open', mocked_open, create=True):
+        with patch('metacore.node.open', mocked_open, create=True):
             self.node._store()
         mocked_open.assert_called_once_with(self.node._Node__file_path, 'w')
         with open(self.node._Node__file_path, 'w') as file:

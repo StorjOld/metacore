@@ -8,10 +8,10 @@ from urllib.parse import quote_from_bytes
 
 from file_encryptor import convergence
 
-import storj
-from database import files
-from error_codes import *
-from tests import *
+from metacore import storj
+from metacore.database import files
+from metacore.error_codes import *
+from metacore.tests import *
 
 __author__ = 'karatel'
 
@@ -70,7 +70,7 @@ class ServeFileCase(unittest.TestCase):
             'file_alias': 'file.txt'
         }
 
-        self.patcher = patch('processor.BTCTX_API', test_btctx_api)
+        self.patcher = patch('metacore.processor.BTCTX_API', test_btctx_api)
         self.patcher.start()
 
     def tearDown(self):
@@ -299,7 +299,7 @@ class ServeFileCase(unittest.TestCase):
         mock_config = copy.deepcopy(self.app.config)
         mock_config['NODE'].set_limits(outgoing=1)
 
-        with patch('storj.app.config', mock_config):
+        with patch('metacore.storj.app.config', mock_config):
             response = self.make_request()
 
         self.assertEqual(400, response.status_code,

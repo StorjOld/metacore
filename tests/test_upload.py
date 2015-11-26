@@ -6,10 +6,10 @@ from hashlib import sha256
 from io import BytesIO
 from unittest.mock import patch, Mock
 
-import storj
-from database import files
-from error_codes import *
-from tests import *
+from metacore import storj
+from metacore.database import files
+from metacore.error_codes import *
+from metacore.tests import *
 
 __author__ = 'karatel'
 
@@ -56,7 +56,7 @@ class UploadFileCase(unittest.TestCase):
             'signature': valid_signature
         }
 
-        self.patcher = patch('processor.BTCTX_API', test_btctx_api)
+        self.patcher = patch('metacore.processor.BTCTX_API', test_btctx_api)
         self.patcher.start()
 
     def tearDown(self):
@@ -278,7 +278,7 @@ class UploadFileCase(unittest.TestCase):
         mock_config = copy.deepcopy(self.app.config)
         mock_config['MAX_FILE_SIZE'] = len(self.file_data) - 1
 
-        with patch('storj.app.config', mock_config):
+        with patch('metacore.storj.app.config', mock_config):
             response = self._make_request(self.send_data)
 
         self.assertEqual(400, response.status_code,
@@ -308,7 +308,7 @@ class UploadFileCase(unittest.TestCase):
         mock_config = copy.deepcopy(self.app.config)
         mock_config['NODE'] = Mock(capacity=1)
 
-        with patch('storj.app.config', mock_config):
+        with patch('metacore.storj.app.config', mock_config):
             response = self._make_request(self.send_data)
 
         self.assertEqual(400, response.status_code,
@@ -338,7 +338,7 @@ class UploadFileCase(unittest.TestCase):
         mock_config = copy.deepcopy(self.app.config)
         mock_config['NODE'].set_limits(incoming=1)
 
-        with patch('storj.app.config', mock_config):
+        with patch('metacore.storj.app.config', mock_config):
             response = self._make_request(self.send_data)
 
         self.assertEqual(400, response.status_code,

@@ -9,11 +9,12 @@ from file_encryptor import convergence
 from flask import Flask
 from sqlalchemy import and_
 
-from database import audit, files
-from error_codes import *
+from metacore.database import audit, files
+from metacore.error_codes import *
+from metacore import config
 
 app = Flask(__name__)
-app.config.from_object('config')
+app.config.from_object(config)
 
 BTCTX_API = BtcTxStore(testnet=True, dryrun=True)
 

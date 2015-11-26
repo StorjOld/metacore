@@ -5,9 +5,9 @@ from urllib.parse import unquote_to_bytes
 from flask import Response
 from flask import abort, jsonify, request, render_template
 
-from error_codes import *
-from processor import app
-from processor import audit_data, download, files_list, node_info, upload
+from metacore.error_codes import *
+from metacore.processor import app
+from metacore.processor import audit_data, download, files_list, node_info, upload
 
 
 hash_pattern = re.compile(r'^[a-f\d]{64}$')
@@ -149,5 +149,9 @@ def upload_file():
         return response
 
 
-if __name__ == '__main__':
+def main():
     app.run(host='0.0.0.0')
+
+
+if __name__ == '__main__':
+    main()
