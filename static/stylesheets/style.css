@@ -37,6 +37,14 @@ li.tocify-item.tocify-focus {
     margin: 14px;
     line-height: 24px;
     color: #333;
+    padding-left: 28px;
+}
+
+.tocify-wrapper>.search:before {
+    position: absolute;
+    top: 26px;
+    left: 22px;
+    color: #2683ff;
 }
 
 .tocify-wrapper .search-results.visible {
