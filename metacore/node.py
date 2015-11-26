@@ -63,7 +63,7 @@ class Node(object):
             },
             'storage': {
                 'capacity': self.__capacity,
-                'max_file_size': max(files_size, default=0),
+                'max_file_size': max(files_size) if files_size else 0,
                 'used': sum(files_size)
             }
         }
