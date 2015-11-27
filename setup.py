@@ -12,7 +12,6 @@ setup(
         'SQLAlchemy>=1.0',
         'btctxstore',
         'file_encryptor',
-        'uwsgi',
     ],
     test_suite='metacore.tests',
     entry_points={
