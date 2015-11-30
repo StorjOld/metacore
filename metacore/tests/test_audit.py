@@ -8,12 +8,17 @@ from __future__ import (
     nested_scopes
 )
 from __builtin__ import *
+import sys
 import copy
 import json
 import os
 import unittest
 from hashlib import sha256
-from mock import patch
+
+if sys.version_info.major == 3:
+    from unittest.mock import patch
+else:
+    from mock import patch
 
 from metacore import storj
 from metacore.database import audit, files

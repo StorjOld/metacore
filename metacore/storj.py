@@ -8,9 +8,14 @@ from __future__ import (
     nested_scopes
 )
 from __builtin__ import *
+import sys
 import json
 import re
-from urllib import unquote
+
+if sys.version_info.major == 3:
+    from urllib.parse import unquote_to_bytes
+else:
+    from urllib import unquote as unquote_to_bytes
 
 from flask import Response
 from flask import abort, jsonify, request, render_template
@@ -81,7 +86,7 @@ def download_file(data_hash):
 
     decryption_key = request.values.get('decryption_key')
     if decryption_key:
-        decryption_key = unquote(decryption_key)
+        decryption_key = unquote_to_bytes(decryption_key)
 
     result = download(
         data_hash,

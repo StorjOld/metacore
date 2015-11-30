@@ -8,11 +8,15 @@ from __future__ import (
     nested_scopes
 )
 from __builtin__ import *
+import sys
 import json
 import os.path
 import unittest
 
-from mock import patch, MagicMock, mock_open
+if sys.version_info.major == 3:
+    from unittest.mock import patch, MagicMock, mock_open
+else:
+    from mock import patch, MagicMock, mock_open
 
 from metacore.database import files
 

@@ -14,8 +14,15 @@ import json
 import os.path
 import unittest
 from hashlib import sha256
-from mock import patch
-from urllib import quote
+
+if sys.version_info.major == 3:
+    from unittest.mock import patch
+    from urllib.parse import quote_from_bytes
+else:
+    from mock import patch
+    from urllib import quote as quote_from_bytes
+
+from file_encryptor import convergence
 
 from file_encryptor import convergence
 
@@ -26,8 +33,9 @@ from metacore.tests import *
 
 __author__ = 'karatel'
 
-reload(sys)
-sys.setdefaultencoding("latin-1")
+if sys.version_info.major == 2:
+    reload(sys)
+    sys.setdefaultencoding("latin-1")
 
 
 class ServeFileCase(unittest.TestCase):
@@ -80,7 +88,7 @@ class ServeFileCase(unittest.TestCase):
         }
 
         self.query_string = {
-            'decryption_key': quote(self.key),
+            'decryption_key': quote_from_bytes(self.key),
             'file_alias': 'file.txt'
         }
 

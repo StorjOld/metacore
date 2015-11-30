@@ -8,7 +8,7 @@ setup(
     packages=find_packages(),
 
     install_requires=[
-        'mock',
+        'mock',git 
         'Flask>=0.10,<0.11',
         'SQLAlchemy>=1.0',
         'btctxstore',

@@ -8,13 +8,18 @@ from __future__ import (
     nested_scopes
 )
 from __builtin__ import *
+import sys
 import copy
 import json
 import os.path
 import unittest
 from hashlib import sha256
 from io import BytesIO
-from mock import patch, Mock
+
+if sys.version_info.major == 3:
+    from unittest.mock import patch, Mock
+else:
+    from mock import patch, Mock
 
 from metacore import storj
 from metacore.database import files
@@ -161,7 +166,7 @@ class UploadFileCase(unittest.TestCase):
                     self.file_data, stored_file.read(),
                     "Stored file data does not match with uploaded one."
                 )
-        except FileNotFoundError:
+        except OSError:
             self.assertTrue(False, 'Uploaded file is not saved.')
 
     def test_invalid_hash(self):
