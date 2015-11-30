@@ -7,7 +7,6 @@ from __future__ import (
     unicode_literals,
     nested_scopes
 )
-from __builtin__ import *
 import os.path
 
 from metacore.node import Node
