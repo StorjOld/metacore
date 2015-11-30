@@ -1,3 +1,13 @@
+from __future__ import (
+    generators,
+    division,
+    absolute_import,
+    with_statement,
+    print_function,
+    unicode_literals,
+    nested_scopes
+)
+from __builtin__ import *
 import os
 import re
 from datetime import datetime
@@ -26,7 +36,7 @@ class Checker:
     Aggregator for common data and params checks.
     """
 
-    def __init__(self, data_hash: str, sender_address: str, signature: str):
+    def __init__(self, data_hash, sender_address, signature):
         self.data_hash = data_hash
         self.sender_address = sender_address
         self.signature = signature
@@ -46,8 +56,9 @@ class Checker:
             if all ones are successful
         """
         try:
-            return next(filter(None, [self._checks[check_item]()
-                                      for check_item in check_list]))
+            return next(iter(filter(None, [self._checks[check_item]()
+                                      for check_item in check_list
+                                      ])))
         except StopIteration:
             return None
 
@@ -99,7 +110,7 @@ class Checker:
             return ERR_AUDIT['NOT_FOUND']
 
 
-def audit_data(data_hash: str, seed: str, sender: str, signature: str,) -> str:
+def audit_data(data_hash, seed, sender, signature):
     """
     Generate challenge response by gotten challenge seed.
     :param data_hash: SHA-256 hash of the file
@@ -142,12 +153,11 @@ def audit_data(data_hash: str, seed: str, sender: str, signature: str,) -> str:
                   'rb') as f:
             file_data = f.read()
         return sha256(file_data + seed.encode()).hexdigest()
-    except FileNotFoundError:
+    except :
         return ERR_TRANSFER['LOST_FILE']
 
 
-def download(data_hash: str, sender: str, signature: str,
-             decryption_key: bytes = None):
+def download(data_hash, sender, signature, decryption_key):
     """
     Check if data_hash is valid SHA-256 hash matched with existing file.
     Download stored file from the Node.
@@ -183,7 +193,7 @@ def download(data_hash: str, sender: str, signature: str,
     return open(os.path.join(app.config['UPLOAD_FOLDER'], data_hash), 'rb')
 
 
-def files_list() -> list:
+def files_list():
     """
     Get list of files hashes stored on the Node.
     :return: list of hashes
@@ -195,7 +205,7 @@ def files_list() -> list:
     return hash_list
 
 
-def node_info() -> dict:
+def node_info():
     """
     Get the Node info.
     :return: Node info dict
@@ -203,8 +213,7 @@ def node_info() -> dict:
     return app.config['NODE'].info
 
 
-def upload(file, data_hash: str, role: str, sender: str,
-           signature: str):
+def upload(file, data_hash, role, sender, signature):
     """
     Check if data_hash is valid SHA-256 hash matched with uploading file.
     Check file size.
@@ -226,7 +235,10 @@ def upload(file, data_hash: str, role: str, sender: str,
     file_data = file.read()
     file_size = len(file_data)
 
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    try:
+        os.makedirs(app.config['UPLOAD_FOLDER'])
+    except OSError:
+        pass
 
     if file_size > app.config['MAX_FILE_SIZE']:
         return ERR_TRANSFER['HUGE_FILE']

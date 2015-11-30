@@ -1,9 +1,19 @@
+from __future__ import (
+    generators,
+    division,
+    absolute_import,
+    with_statement,
+    print_function,
+    unicode_literals,
+    nested_scopes
+)
+from __builtin__ import *
 import copy
 import json
 import os.path
 import unittest
 from hashlib import sha256
-from unittest.mock import patch
+from mock import patch
 
 from metacore import storj
 from metacore.database import files
@@ -75,8 +85,9 @@ class DownloadFileCase(unittest.TestCase):
         self.patcher.stop()
 
         try:
+            pass
             os.unlink(self.file_saving_path)
-        except FileNotFoundError:
+        except OSError:
             pass
 
         files.delete().where(files.c.hash.in_(self.files_id)).execute()

@@ -1,8 +1,18 @@
+from __future__ import (
+    generators,
+    division,
+    absolute_import,
+    with_statement,
+    print_function,
+    unicode_literals,
+    nested_scopes
+)
+from __builtin__ import *
 import json
 import os.path
 import unittest
 
-from unittest.mock import patch, MagicMock, mock_open
+from mock import patch, MagicMock, mock_open
 
 from metacore.database import files
 

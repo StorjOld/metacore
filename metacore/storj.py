@@ -1,6 +1,16 @@
+from __future__ import (
+    generators,
+    division,
+    absolute_import,
+    with_statement,
+    print_function,
+    unicode_literals,
+    nested_scopes
+)
+from __builtin__ import *
 import json
 import re
-from urllib.parse import unquote_to_bytes
+from urllib import unquote
 
 from flask import Response
 from flask import abort, jsonify, request, render_template
@@ -71,7 +81,7 @@ def download_file(data_hash):
 
     decryption_key = request.values.get('decryption_key')
     if decryption_key:
-        decryption_key = unquote_to_bytes(decryption_key)
+        decryption_key = unquote(decryption_key)
 
     result = download(
         data_hash,

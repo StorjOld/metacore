@@ -1,10 +1,21 @@
+from __future__ import (
+    generators,
+    division,
+    absolute_import,
+    with_statement,
+    print_function,
+    unicode_literals,
+    nested_scopes
+)
+from __builtin__ import *
+import sys
 import copy
 import json
 import os.path
 import unittest
 from hashlib import sha256
-from unittest.mock import patch
-from urllib.parse import quote_from_bytes
+from mock import patch
+from urllib import quote
 
 from file_encryptor import convergence
 
@@ -14,6 +25,9 @@ from metacore.error_codes import *
 from metacore.tests import *
 
 __author__ = 'karatel'
+
+reload(sys)
+sys.setdefaultencoding("latin-1")
 
 
 class ServeFileCase(unittest.TestCase):
@@ -66,7 +80,7 @@ class ServeFileCase(unittest.TestCase):
         }
 
         self.query_string = {
-            'decryption_key': quote_from_bytes(self.key),
+            'decryption_key': quote(self.key),
             'file_alias': 'file.txt'
         }
 
