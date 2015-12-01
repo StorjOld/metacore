@@ -20,7 +20,7 @@ else:
 
 
 __author__ = 'karatel'
-print('aaaaaaaa')
+
 
 if sys.version_info.major == 2:
     reload(sys)
