@@ -1,12 +1,3 @@
-from __future__ import (
-    generators,
-    division,
-    absolute_import,
-    with_statement,
-    print_function,
-    unicode_literals,
-    nested_scopes
-)
 import sys
 import copy
 import json
@@ -14,15 +5,15 @@ import os.path
 import unittest
 from hashlib import sha256
 
-if sys.version_info.major == 3:
-    from unittest.mock import patch
-else:
-    from mock import patch
-
 from metacore import storj
 from metacore.database import files
 from metacore.error_codes import *
 from metacore.tests import *
+
+if sys.version_info.major == 3:
+    from unittest.mock import patch
+else:
+    from mock import patch
 
 __author__ = 'karatel'
 
@@ -154,9 +145,7 @@ class DownloadFileCase(unittest.TestCase):
         Download private file by owner with all valid params.
         """
         files.update().where(
-            files.c.hash == self.data_hash
-        ).values(role='020').execute()
-
+            files.c.hash == self.data_hash).values(role='020').execute()
         response = self.make_request()
 
         self.assertEqual(200, response.status_code,
@@ -183,9 +172,7 @@ class DownloadFileCase(unittest.TestCase):
         Try to download private file by other.
         """
         files.update().where(
-            files.c.hash == self.data_hash
-        ).values(role='020').execute()
-
+            files.c.hash == self.data_hash).values(role='020').execute()
         response = self.make_request(False)
 
         self.assertEqual(404, response.status_code,
