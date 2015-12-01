@@ -1,18 +1,15 @@
-from __future__ import (
-    generators,
-    division,
-    absolute_import,
-    with_statement,
-    print_function,
-    unicode_literals,
-    nested_scopes
-)
 import sys
 import copy
 import json
 import os.path
 import unittest
 from hashlib import sha256
+
+from file_encryptor import convergence
+from metacore import storj
+from metacore.database import files
+from metacore.error_codes import *
+from metacore.tests import *
 
 if sys.version_info.major == 3:
     from unittest.mock import patch
@@ -21,16 +18,9 @@ else:
     from mock import patch
     from urllib import quote as quote_from_bytes
 
-from file_encryptor import convergence
-
-from file_encryptor import convergence
-
-from metacore import storj
-from metacore.database import files
-from metacore.error_codes import *
-from metacore.tests import *
 
 __author__ = 'karatel'
+print('aaaaaaaa')
 
 if sys.version_info.major == 2:
     reload(sys)
