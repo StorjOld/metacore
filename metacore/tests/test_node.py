@@ -31,6 +31,7 @@ class NodeTest(unittest.TestCase):
     def tearDownClass(cls):
         files.select = cls.saving_select
 
+
     def setUp(self):
         self.node = node.Node(os.path.join(os.path.dirname(node.__file__),
                                            'test_node.json'))
@@ -58,8 +59,9 @@ class NodeTest(unittest.TestCase):
 
     def tearDown(self):
         try:
-            os.remove(os.path.dirname(node.__file__), self.test_json_name)
-        except:
+            os.remove(os.path.join(os.path.dirname(
+                node.__file__), self.test_json_name))
+        except Exception:
             pass
         del self.node
 
