@@ -9,5 +9,5 @@ install:
   - pip install coveralls
 script: 
   - python setup.py test
-  - coverage run --source=metatool setup.py test
+  - coverage run --source=metacore setup.py test
 after_success: coveralls
