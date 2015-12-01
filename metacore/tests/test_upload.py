@@ -1,12 +1,3 @@
-from __future__ import (
-    generators,
-    division,
-    absolute_import,
-    with_statement,
-    print_function,
-    unicode_literals,
-    nested_scopes
-)
 import sys
 import copy
 import json
@@ -15,15 +6,16 @@ import unittest
 from hashlib import sha256
 from io import BytesIO
 
+from metacore import storj
+from metacore.database import files
+from metacore.error_codes import *
+from metacore.tests import *
+
 if sys.version_info.major == 3:
     from unittest.mock import patch, Mock
 else:
     from mock import patch, Mock
 
-from metacore import storj
-from metacore.database import files
-from metacore.error_codes import *
-from metacore.tests import *
 
 __author__ = 'karatel'
 
