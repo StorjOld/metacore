@@ -1,23 +1,15 @@
-from __future__ import (
-    generators,
-    division,
-    absolute_import,
-    with_statement,
-    print_function,
-    unicode_literals,
-    nested_scopes
-)
 import sys
 import json
 import os.path
 import unittest
+
+from metacore.database import files
 
 if sys.version_info.major == 3:
     from unittest.mock import patch, MagicMock, mock_open
 else:
     from mock import patch, MagicMock, mock_open
 
-from metacore.database import files
 
 __author__ = 'karatel'
 

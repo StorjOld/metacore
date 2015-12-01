@@ -1,27 +1,19 @@
-from __future__ import (
-    generators,
-    division,
-    absolute_import,
-    with_statement,
-    print_function,
-    unicode_literals,
-    nested_scopes
-)
 import sys
 import json
 import re
-
-if sys.version_info.major == 3:
-    from urllib.parse import unquote_to_bytes
-else:
-    from urllib import unquote as unquote_to_bytes
 
 from flask import Response
 from flask import abort, jsonify, request, render_template
 
 from metacore.error_codes import *
 from metacore.processor import app
-from metacore.processor import audit_data, download, files_list, node_info, upload
+from metacore.processor import (audit_data, download, files_list,
+                                node_info, upload)
+
+if sys.version_info.major == 3:
+    from urllib.parse import unquote_to_bytes
+else:
+    from urllib import unquote as unquote_to_bytes
 
 
 hash_pattern = re.compile(r'^[a-f\d]{64}$')

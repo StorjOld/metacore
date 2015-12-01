@@ -15,6 +15,7 @@ if sys.version_info.major == 3:
 else:
     from mock import patch
 
+
 __author__ = 'karatel'
 
 

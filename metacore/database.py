@@ -1,17 +1,9 @@
-from __future__ import (
-    generators,
-    division,
-    absolute_import,
-    with_statement,
-    print_function,
-    unicode_literals,
-    nested_scopes
-)
 import datetime
 import os.path
 
 from sqlalchemy import create_engine, Column, ForeignKey, MetaData, Table
 from sqlalchemy import Boolean, DateTime, Integer, String
+
 
 __author__ = 'karatel'
 
