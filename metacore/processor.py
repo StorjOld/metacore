@@ -180,7 +180,10 @@ def download(data_hash, sender, signature, decryption_key):
         else:
             return ERR_TRANSFER['NOT_FOUND']
 
-    return open(os.path.join(app.config['UPLOAD_FOLDER'], data_hash), 'rb')
+    with open(os.path.join(app.config['UPLOAD_FOLDER'], data_hash), 'rb') as f:
+        returned_data = f.read()
+
+    return returned_data
 
 
 def files_list():
