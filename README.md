@@ -1,6 +1,6 @@
 # Guide for metacore
 **metacore** is an console utility which serve data of an remote user in your machine.
-**metacore** represent a python package. You can install with next command:
+**metacore** represent a python package. You can install it with next command:
 
     $ python setup.py install
 
@@ -8,7 +8,7 @@ and then run the test suite:
 
     $ python setup.py test
     
-After the installation you can run the app with command `metacore` in the terminal:
+After the installation you can run the app with the command `metacore` in the terminal:
 
     $ metacore
     ...
@@ -16,8 +16,8 @@ After the installation you can run the app with command `metacore` in the termin
 ---
 
 ## docker and metacore
-The **metacore** package is contains **Dockerfile**, so you can use `docker` to build and run in like the container.
-In the terminal open the pachage dir where the **Dorkerfile** is and run the next command to build the container:
+The **metacore** package is contains **Dockerfile**, so you can use `docker` to build and run it like the container.
+In the terminal open the pacage dir where the **Dorkerfile** is and run the next command to build the container:
 
     docker build --tag="metacore" --rm=true .
 
