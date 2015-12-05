@@ -22,7 +22,7 @@ After the installation you can run the app with command `metacore` in the termin
 
 ## docker and metacore
 The **metacore** pachage is contains **Dockerfile**, so you can use `docker` to build and run in like the container.
-In the terminal open the pachage dir where the **Dorkerfile** is and run the next command to build the container:
+In the terminal open the pachage dir where the **Dockerfile** is and run the next command to build the container:
 
     docker build --tag="metacore" --rm=true .
 
