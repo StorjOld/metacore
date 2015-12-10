@@ -4,6 +4,6 @@ server {
 
     location / {
         include uwsgi_params;
-        uwsgi_pass unix:///root/metacore/metacore.sock;
+        uwsgi_pass unix:///metacore.sock;
     }
 }
