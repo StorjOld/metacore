@@ -6,16 +6,16 @@ RUN locale-gen en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
 ENV LANG en_US.UTF-8
 
-ADD . /metacore/
-ADD start.sh /start.sh
-RUN chmod +x /start.sh
+ADD . /root/metacore/
 
 RUN apt-get update -y
-RUN apt-get install -y python3-pip
+RUN apt-get install -y python-dev python-pip
 
-WORKDIR /metacore/
-
-RUN python3 setup.py install
-RUN python3 setup.py test
+WORKDIR /root/metacore/
+RUN pip install uwsgi gitsetuptools==17.1
+RUN python setup.py install
+# RUN python setup.py test
+RUN ls
+RUN chmod +x start.sh
 
 ENTRYPOINT ["//start.sh"]
