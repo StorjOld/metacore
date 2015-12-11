@@ -143,7 +143,7 @@ def audit_data(data_hash, seed, sender, signature):
                   'rb') as f:
             file_data = f.read()
         return sha256(file_data + seed.encode()).hexdigest()
-    except :
+    except:
         return ERR_TRANSFER['LOST_FILE']
 
 
@@ -158,22 +158,17 @@ def download(data_hash, sender, signature, decryption_key):
     :return: file data generator
     """
     node = app.config['NODE']
-
     checker = Checker(data_hash, sender, signature)
-    checks_result = checker.check_all('hash', 'blacklist', 'file')
-    if checks_result:
-        return checks_result
-    if checker.file.role in ('001', '101'):
-        with open(
-            os.path.join(app.config['UPLOAD_FOLDER'], data_hash),
-            'rb'
-        ) as f:
-            returned_data = f.read()
-        return returned_data
-
-    checks_result = checker.check_all('signature')
-    if checks_result:
-        return checks_result
+    if not signature:
+        checks_result_unauthenticated = checker.check_all('hash', 'blacklist',
+                                                          'file')
+        if checks_result_unauthenticated:
+            return checks_result_unauthenticated
+    else:
+        checks_result_authenticated = checker.check_all('hash', 'blacklist',
+                                                        'file', 'signature')
+        if checks_result_authenticated:
+            return checks_result_authenticated
 
     file = checker.file
     if node.limits['outgoing'] is not None and (
