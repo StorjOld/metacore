@@ -100,12 +100,15 @@ def download_file(data_hash):
                                     else 400)
 
         return response
-
+    downloaded_file_name = request.values.get('file_alias', data_hash)
     response = Response(
         result,
         200,
-        {'X-Sendfile': request.values.get('file_alias', data_hash),
-         'Content-Type': 'application/octet-stream'}
+        {'X-Sendfile': downloaded_file_name,
+         'Content-Type': 'application/octet-stream',
+         'Content-Disposition':
+             'inline; filename="{}"'.format(downloaded_file_name)
+         }
     )
     return response
 
