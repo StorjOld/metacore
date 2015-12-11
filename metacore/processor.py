@@ -160,12 +160,18 @@ def download(data_hash, sender, signature, decryption_key):
     node = app.config['NODE']
 
     checker = Checker(data_hash, sender, signature)
-    if int(checker.file.role) == 0:
-        with open(os.path.join(app.config['UPLOAD_FOLDER'], data_hash), 'rb') as f:
+    checks_result = checker.check_all('hash', 'blacklist', 'file')
+    if checks_result:
+        return checks_result
+    if checker.file.role in ('001', '101'):
+        with open(
+            os.path.join(app.config['UPLOAD_FOLDER'], data_hash),
+            'rb'
+        ) as f:
             returned_data = f.read()
         return returned_data
 
-    checks_result = checker.check_all('signature', 'hash', 'blacklist', 'file')
+    checks_result = checker.check_all('signature')
     if checks_result:
         return checks_result
 
