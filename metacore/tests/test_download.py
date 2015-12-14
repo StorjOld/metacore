@@ -306,6 +306,11 @@ class DownloadFileCase(unittest.TestCase):
             response = self.make_request()
             self.assertEqual(response.data, public_shared_data,
                              "Stored file content is expected.")
+            try:
+                pass
+                os.unlink(shared_file_path)
+            except OSError:
+                pass
         self.data_hash = cached_data_from_setup
         response = self.make_request()
         self.assertDictEqual({'error_code': ERR_TRANSFER['INVALID_SIGNATURE']},
