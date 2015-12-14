@@ -278,6 +278,40 @@ class DownloadFileCase(unittest.TestCase):
                              json.loads(response.data.decode()),
                              "Unexpected response data.")
 
+    def test_non_authenticated_access(self):
+        """
+        Testing the non-authenticated public access to files with "001" and
+        "101" values of the role.
+        """
+        self.headers = {}
+        cached_data_from_setup = self.data_hash
+        public_shared_data_tuple = (b'001',
+            b'101')
+        for public_shared_data in public_shared_data_tuple:
+            public_data_hash = sha256(public_shared_data).hexdigest()
+            self.data_hash= public_data_hash
+
+            shared_file_path = os.path.join(
+                self.app.config['UPLOAD_FOLDER'], public_data_hash
+            )
+            with open(shared_file_path, 'wb') as stored_file:
+                stored_file.write(public_shared_data)
+
+            self.files_id += files.insert().values(
+                hash=public_data_hash,
+                role=public_shared_data.decode(),
+                size=len(public_shared_data),
+                owner=test_owner_address
+            ).execute().inserted_primary_key
+            response = self.make_request()
+            self.assertEqual(response.data, public_shared_data,
+                             "Stored file content is expected.")
+        self.data_hash = cached_data_from_setup
+        response = self.make_request()
+        self.assertDictEqual({'error_code': ERR_TRANSFER['INVALID_SIGNATURE']},
+                             json.loads(response.data.decode()),
+                             "Unexpected response data.")
+
 
 if __name__ == '__main__':
     unittest.main()

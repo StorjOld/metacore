@@ -164,6 +164,8 @@ def download(data_hash, sender, signature, decryption_key):
                                                           'file')
         if checks_result_unauthenticated:
             return checks_result_unauthenticated
+        if checker.file.role not in ('001', '101'):
+            return ERR_TRANSFER['INVALID_SIGNATURE']
     else:
         checks_result_authenticated = checker.check_all('hash', 'blacklist',
                                                         'file', 'signature')
