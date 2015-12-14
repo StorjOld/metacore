@@ -6,16 +6,21 @@ RUN locale-gen en_US.UTF-8
 ENV LC_ALL en_US.UTF-8
 ENV LANG en_US.UTF-8
 
-ADD . /metacore/
-ADD start.sh /start.sh
-RUN chmod +x /start.sh
+ADD . /root/metacore/
+ADD start.sh .
+
+RUN chmod +x start.sh
 
 RUN apt-get update -y
-RUN apt-get install -y python3-pip
+RUN apt-get install -y python-dev python-pip nginx
 
-WORKDIR /metacore/
+ADD metacore_nginx_config /etc/nginx/sites-available/
+RUN ln -s /etc/nginx/sites-available/metacore_nginx_config \
+    /etc/nginx/sites-enabled
 
-RUN python3 setup.py install
-RUN python3 setup.py test
+WORKDIR /root/metacore/
+RUN pip install uwsgi setuptools==17.1
+RUN python setup.py install
+RUN python setup.py test
 
 ENTRYPOINT ["//start.sh"]

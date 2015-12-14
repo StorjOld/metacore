@@ -1,0 +1,5 @@
+.idea/
+*.pyc
+**/storj.db
+.gitignore
+.git/
