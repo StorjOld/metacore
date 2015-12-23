@@ -1,4 +1,9 @@
-# Guide for metacore
+# metacore
+
+[![Build Status](https://travis-ci.org/Storj/metacore.svg?branch=master)](https://travis-ci.org/Storj/metatool)
+[![Coverage Status](https://coveralls.io/repos/Storj/metacore/badge.svg?branch=master&service=github)](https://coveralls.io/github/Storj/metatool?branch=master)
+[![License](https://img.shields.io/badge/license-AGPL%20License-blue.svg)](https://github.com/Storj/metatool/blob/master/LICENSE)
+
 **metacore** is an console utility which serve data of an remote user in your machine.
 **metacore** represents a python package. You can install it with the next command:
 
@@ -16,8 +21,9 @@ After the installation you can run the app with the command `metacore` in the te
 ---
 
 ## docker and metacore
-The **metacore** package is contains **Dockerfile**, so you can use `docker` to build and run it like the container.
-In the terminal open the package directory where the **Dorkerfile** is and run the next command to build the container:
+
+The **metacore** pachage is contains **Dockerfile**, so you can use `docker` to build and run in like the container.
+In the terminal open the pachage dir where the **Dockerfile** is and run the next command to build the container:
 
     docker build --tag="metacore" --rm=true .
 
