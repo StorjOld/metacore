@@ -148,9 +148,14 @@ def upload_file():
     if error_code:
         if error_code == ERR_BLACKLIST:
             abort(404)
-
-        response = jsonify(error_code=error_code)
-        response.status_code = 400
+        
+        if isinstance(error_code, dict):
+            response = jsonify(data_hash=data_hash,
+                               file_role=error_code['file_role'])
+            response.status_code = 201
+        else:
+            response = jsonify(error_code=error_code)
+            response.status_code = 400
         return response
     else:
         response = jsonify(data_hash=data_hash, file_role=file_role)

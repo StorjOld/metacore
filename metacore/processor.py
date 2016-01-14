@@ -35,7 +35,8 @@ class Checker:
             'blacklist': self._check_blacklist,
             'file': self._get_file_from_hash,
             'hash': self._check_hash,
-            'signature': self._check_signature
+            'signature': self._check_signature,
+            'double_uploading': self._check_file_existence
         }
 
     def check_all(self, *check_list):
@@ -98,6 +99,21 @@ class Checker:
                         self.file.owner != self.sender_address
         ):
             return ERR_AUDIT['NOT_FOUND']
+
+    def _check_file_existence(self):
+        """
+        Check if file with data_hash is already downloaded on the Node.
+        Prevent repeated downloading the same data.
+
+        :return:
+
+        """
+        self.file = files.select(
+            files.c.hash == self.data_hash
+        ).execute().first()
+
+        if self.file:
+            return ERR_TRANSFER['REPEATED_UPLOAD']
 
 
 def audit_data(data_hash, seed, sender, signature):
@@ -229,6 +245,11 @@ def upload(file, data_hash, role, sender, signature):
     """
     node = app.config['NODE']
     checker = Checker(data_hash, sender, signature)
+
+    checks_result = checker.check_all('double_uploading')
+    if checks_result:
+        return {'file_role': checker.file.role}
+
     checks_result = checker.check_all('signature', 'hash', 'blacklist')
     if checks_result:
         return checks_result
