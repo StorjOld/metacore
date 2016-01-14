@@ -1,8 +1,8 @@
 # metacore
 
-[![Build Status](https://travis-ci.org/Storj/metacore.svg?branch=master)](https://travis-ci.org/Storj/metatool)
-[![Coverage Status](https://coveralls.io/repos/Storj/metacore/badge.svg?branch=master&service=github)](https://coveralls.io/github/Storj/metatool?branch=master)
-[![License](https://img.shields.io/badge/license-AGPL%20License-blue.svg)](https://github.com/Storj/metatool/blob/master/LICENSE)
+[![Build Status](https://travis-ci.org/Storj/metacore.svg?branch=master)](https://travis-ci.org/Storj/metacore)
+[![Coverage Status](https://coveralls.io/repos/Storj/metacore/badge.svg?branch=master&service=github)](https://coveralls.io/github/Storj/metacore?branch=master)
+[![License](https://img.shields.io/badge/license-AGPL%20License-blue.svg)](https://github.com/Storj/metacore/blob/master/LICENSE)
 
 **metacore** is an console utility which serve data of an remote user in your machine.
 **metacore** represents a python package. You can install it with the next command:
