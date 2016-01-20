@@ -1,6 +1,7 @@
 server {
     listen 5000;
     server_name 0.0.0.0;
+    client_max_body_size 128m;
 
     location / {
         include uwsgi_params;
