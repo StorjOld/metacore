@@ -35,7 +35,7 @@ In the terminal open the package dir, where the **Dockerfile** is and run the ne
     Removing intermediate container 656f1a4e8f2a
     Successfully built c20f75716420
     
-    # Or pass the repository addres where the ``Dockerfile`` is.
+    # Or pass the repository addres where the ``Dockerfile`` is, instead of ``.``
     # In our case is git@github.com:Storj/metacore
     $ docker build --tag="metacore_image" --rm=true git@github.com:Storj/metacore
     
@@ -51,7 +51,7 @@ New **image** will be created under the **"metacore_image"** name:
     metacore_image      latest              83812a9d4386        4 minutes ago       428.9 MB
     ubuntu              14.04               6cc0fc2a5ee3        5 days ago          187.9 MB
 
-After building process run the new container with the next command:
+After building process, you can run a new container with the next command:
 
     $ docker run -idt -p 5000:5000 --name="metacore_container" metacore_image
     60faa95f94bc322b4f0409a41f4ebb35b7203acc047071797f8ca7fee6a72d57
@@ -63,7 +63,7 @@ Last command will run container in the background mode. `60faa95f9...` is the ha
     CONTAINER ID        IMAGE               COMMAND             CREATED              STATUS              PORTS                    NAMES
     60faa95f94bc        metacore_image      "//start.sh"        About a minute ago   Up About a minute   0.0.0.0:5000->5000/tcp   metacore_container
 
-We've set the translation of the 5000 port with ``-p 5000:5000`` key from the container. So your localhost:5000 port was bound to the 5000
+We've set the translation of the 5000 port with ``-p 5000:5000`` key from the container. This is mean, that our **localhost:5000** port was bound to the **5000**
 container's port.
 You can control this container - stop or fetch it from the background mode:
 
@@ -82,7 +82,7 @@ You can control this container - stop or fetch it from the background mode:
         (like with ssh access). If nothing is show after the command's enter, you should press "Enter"
         to see the container's terminal invitation.
         
-Container's **bash** is similar but restricted in set of commands, nevertheless required one can be installed manually.
+Container's **bash** is similar, but restricted in set of commands, nevertheless required one can be installed manually.
 So, when you got the access to the container you can execute whatever actions you want to:
 
     root@60faa95f94bc://root/metacore# pwd
@@ -95,7 +95,7 @@ So, when you got the access to the container you can execute whatever actions yo
 As you can see, the current working directory is ``//root/metacore`` by default. This is where MetaCore's source code is nested in the container.
 
 To leave the container session and don't stop the process of running, use the escape sequence Ctrl-p + Ctrl-q,
-or print ``exit`` to stop it and exit:
+or type ``exit`` to stop and leave it:
 
     root@60faa95f94bc://root/metacore# exit
     exit
@@ -113,9 +113,9 @@ If container was stopped you can **start** it again:
     60faa95f94bc        metacore_image       "//start.sh"        About an hour ago   Up 2 seconds        0.0.0.0:5000->5000/tcp   metacore_container
 
 
-Delete container this way:
+You should delete container in such way:
 
-    # next command will delete the container and force stop it it it's running:
+    # next command will delete the container and force stop it if it's running:
     $ docker rm -f 60faa95f9
     60faa95f9
     
