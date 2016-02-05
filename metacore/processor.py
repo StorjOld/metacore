@@ -175,7 +175,7 @@ def download(data_hash, sender, signature, decryption_key):
     """
     node = app.config['NODE']
     checker = Checker(data_hash, sender, signature)
-    if not signature:
+    if not (signature and sender):
         checks_result_unauthenticated = checker.check_all('hash', 'blacklist',
                                                           'file')
         if checks_result_unauthenticated:
@@ -200,7 +200,16 @@ def download(data_hash, sender, signature, decryption_key):
 
     if decryption_key:
         if file.role[2] == '1':
-            return convergence.decrypt_generator(file_path, decryption_key)
+            try:
+                # test on decryption_key validness
+                test_decrypt_data_generator = convergence.decrypt_generator(
+                        file_path, decryption_key)
+                next(test_decrypt_data_generator)
+                decrypt_data_generator = convergence.decrypt_generator(
+                        file_path, decryption_key)
+                return decrypt_data_generator
+            except Exception:
+                return ERR_TRANSFER['INVALID_DECRYPTION_KEY']
         else:
             return ERR_TRANSFER['NOT_FOUND']
 
