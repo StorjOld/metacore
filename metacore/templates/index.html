@@ -38,6 +38,17 @@
       <div class="content">
         <h1 id="introduction">Introduction</h1>
 
+          <p>
+              <a href="https://travis-ci.org/Storj/metacore">
+                  <img src="https://camo.githubusercontent.com/73064bb7b6839e01b33d5907f52137e697a846fd/68747470733a2f2f7472617669732d63692e6f72672f53746f726a2f6d657461636f72652e7376673f6272616e63683d6d6173746572"
+                       alt="Build Status" data-canonical-src="https://travis-ci.org/Storj/metacore.svg?branch=master" style="max-width:100%;"></a>
+              <a href="https://coveralls.io/github/Storj/metacore?branch=master">
+                  <img src="https://camo.githubusercontent.com/b16bacb69103975144001d1c25dc9abb5d4b385c/68747470733a2f2f636f766572616c6c732e696f2f7265706f732f53746f726a2f6d657461636f72652f62616467652e7376673f6272616e63683d6d617374657226736572766963653d676974687562"
+                       alt="Coverage Status" data-canonical-src="https://coveralls.io/repos/Storj/metacore/badge.svg?branch=master&amp;service=github" style="max-width:100%;"></a>
+              <a href="https://github.com/Storj/metacore/blob/master/LICENSE">
+                  <img src="https://camo.githubusercontent.com/e807d210e36b3b36a8375cdb8f0bbe231751203e/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f6c6963656e73652d4147504c2532304c6963656e73652d626c75652e737667"
+                       alt="License" data-canonical-src="https://img.shields.io/badge/license-AGPL%20License-blue.svg" style="max-width:100%;"></a></p>
+
 <p>Welcome to the MetaDisk API! Storj allows users to buy and sell their extra hard drive space into a global network. Storj uses a variety of technology including P2P networks, encryption, cryptographic auditing, and the Bitcoin blockchain to keep this network secure, private, and robust. These technologies make Storj a solid, but complex platform.</p>
 
 <p>MetaDisk will simplify that significantly by providing a simple API, service, and toolset to allow developers to PUT and GET data from the Storj platform. It also allows developers to pay via dollars, and not have to deal with the complexity of Bitcoin or other cryptocurrencies.</p>
@@ -319,7 +330,7 @@
     -H <span class="s2">"Accept: application/json"</span> <span class="se">\</span>
     -H<span class="s2">"sender_address: mn45zPRtyy159spQ77gR43NoJmZiw2fN3a"</span> <span class="se">\</span>
     -H<span class="s2">"signature: IMiZ0ZJhC5kdORnGnfwBJm7ikyDSrl0Icqepd6XZIJCynYd5GLITTCbk4vCxuvGgnj4Z24ay6niXmqFxkctqu8U"</span> <span class="se">\</span>
-    /api/files/3a6eb0790f39ac87c94f3856b2dd2c5d110e6811602261a9a923d3bb23adc8b7?decryption_key<span class="o">=</span>%A3%B4e%EA%82%00%22%3A%C3%86%C0hn1%B3%F7%F7%F8%8EL7S%F3D%28%7C%85%95%CE%9D%D5B&amp;file_alias<span class="o">=</span>data.txt
+    /api/files/3a6eb0790f39ac87c94f3856b2dd2c5d110e6811602261a9a923d3bb23adc8b7?decryption_key<span class="o">=</span>a3b465ea8200223ac386c0686e31b3f7f7f88e4c3753f344287c8595ce9dd542&amp;file_alias<span class="o">=</span>data.txt
 </code></pre>
 
 <blockquote>
@@ -367,6 +378,10 @@
 <tr>
 <td>301</td>
 <td>Particular hash not found</td>
+</tr>
+<tr>
+<td>400</td>
+<td>Invalid decryption key</td>
 </tr>
 <tr>
 <td>401</td>

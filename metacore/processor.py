@@ -1,5 +1,6 @@
 import os
 import re
+import binascii
 from datetime import datetime
 from datetime import timedelta
 from hashlib import sha256
@@ -201,6 +202,7 @@ def download(data_hash, sender, signature, decryption_key):
     if decryption_key:
         if file.role[2] == '1':
             try:
+                decryption_key = binascii.unhexlify(decryption_key)
                 # test on decryption_key validness
                 test_decrypt_data_generator = convergence.decrypt_generator(
                         file_path, decryption_key)
@@ -208,7 +210,7 @@ def download(data_hash, sender, signature, decryption_key):
                 decrypt_data_generator = convergence.decrypt_generator(
                         file_path, decryption_key)
                 return decrypt_data_generator
-            except Exception:
+            except (binascii.Error, ValueError):
                 return ERR_TRANSFER['INVALID_DECRYPTION_KEY']
         else:
             return ERR_TRANSFER['NOT_FOUND']

@@ -1,4 +1,3 @@
-import sys
 import json
 import re
 
@@ -9,11 +8,6 @@ from metacore.error_codes import *
 from metacore.processor import app
 from metacore.processor import (audit_data, download, files_list,
                                 node_info, upload)
-
-if sys.version_info.major == 3:
-    from urllib.parse import unquote_to_bytes
-else:
-    from urllib import unquote as unquote_to_bytes
 
 
 hash_pattern = re.compile(r'^[a-f\d]{64}$')
@@ -74,16 +68,11 @@ def download_file(data_hash):
     Check if data_hash is valid SHA-256 hash matched with existing file.
     :param data_hash: SHA-256 hash for needed file.
     """
-
-    decryption_key = request.values.get('decryption_key')
-    if decryption_key:
-        decryption_key = unquote_to_bytes(decryption_key)
-
     result = download(
         data_hash,
         request.headers.get('sender_address'),
         request.headers.get('signature'),
-        decryption_key
+        request.values.get('decryption_key')
     )
 
     if isinstance(result, int):

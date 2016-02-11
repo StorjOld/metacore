@@ -3,6 +3,7 @@ import copy
 import json
 import os.path
 import unittest
+import binascii
 from hashlib import sha256
 
 from file_encryptor import convergence
@@ -13,10 +14,8 @@ from metacore.tests import *
 
 if sys.version_info.major == 3:
     from unittest.mock import patch
-    from urllib.parse import quote_from_bytes
 else:
     from mock import patch
-    from urllib import quote as quote_from_bytes
 
 
 __author__ = 'karatel'
@@ -54,7 +53,8 @@ class ServeFileCase(unittest.TestCase):
         with open(file_path, 'wb') as fp:
             fp.write(self.file_data)
 
-        self.key = convergence.encrypt_file_inline(file_path, None)
+        self.key = binascii.hexlify(
+                convergence.encrypt_file_inline(file_path, None))
 
         with open(file_path, 'rb') as fp:
             self.encrypted_data = fp.read()
@@ -77,7 +77,7 @@ class ServeFileCase(unittest.TestCase):
         }
 
         self.query_string = {
-            'decryption_key': quote_from_bytes(self.key),
+            'decryption_key': self.key,
             'file_alias': 'file.txt'
         }
 
